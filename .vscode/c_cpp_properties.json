@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Zephyr-ARM",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            // Указываем компилятор из вашего Zephyr SDK 0.16.9 (из логов сборки)
+            "compilerPath": "/home/winix/.local/opt/zephyr-sdk-0.16.9/arm-zephyr-eabi/bin/arm-zephyr-eabi-g++',
+            "cStandard": "c99",
+            "cppStandard": "c++20", // Выставляем стандарт вашего prj.conf
+            "intelliSenseMode": "linux-gcc-arm",
+            
+            // ЗАКОММЕНТИРОВАНО: nRF Connect больше не будет блокировать подсветку
+            "//configurationProvider": "nordic-semiconductor.nrf-connect",
+            
+            // ИСПРАВЛЕНО: Убраны квадратные скобки, теперь это чистая строка пути
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

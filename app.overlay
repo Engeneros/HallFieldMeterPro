@@ -1,0 +1,490 @@
+#include <zephyr/dt-bindings/pinctrl/stm32-pinctrl.h>
+/////////-----------UART4.1952---------
+
+/////////-----------UART4.1952---------
+/* app.overlay */
+
+/* === НАСТРОЙКА ТАКТИРОВАНИЯ (ПОД КВАРЦ 4.9152 МГц) === */
+&clk_hse {
+    clock-frequency = <4915200>;
+    status = "okay";
+};
+
+&pll {
+    div-m = <4>;           /* 4.9152 / 4 = 1.2288 MHz */
+    mul-n = <320>;         /* 1.2288 * 320 = 393.216 MHz */
+    div-p = <2>;           /* 393.216 / 2 = 196.608 MHz (SYSCLK) */
+    div-q = <8>;           /* Значение для USB (не используется) */
+
+    clocks = <&clk_hse>;
+    status = "okay";
+};
+
+&rcc {
+    clocks = <&pll>;
+    clock-frequency = <196608000>; /* Итоговый SYSCLK */
+
+    ahb-prescaler = <1>;   /* HCLK = 196.608 MHz */
+    apb1-prescaler = <4>;  /* PCLK1 = 49.152 MHz */
+    apb2-prescaler = <2>;  /* PCLK2 = 98.304 MHz (Тактирует ваш USART1) */
+};
+
+
+// === НАСТРОЙКА ПЕРИФЕРИИ И КОНСОЛИ ===
+
+// 1. Настраиваем мультиплексирование ножек (Pin Control)
+&pinctrl {
+    usart1_tx_pa9: usart1_tx_pa9 {
+        pinmux = <STM32_PINMUX('A', 9, AF7)>; /* PA9 как Alternate Function 7 (UART1_TX) */
+    };
+    usart1_rx_pa10: usart1_rx_pa10 {
+        pinmux = <STM32_PINMUX('A', 10, AF7)>; /* PA10 как AF7 (UART1_RX) */
+        bias-pull-up; /* Включаем подтяжку для линии RX */
+    };
+};
+
+/* 2. Активируем сам UART1 и привязываем к нему пины */
+&usart1 {
+    status = "okay";
+    current-speed = <115200>;
+    pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
+    pinctrl-names = "default";
+};
+
+/* 3. Говорим Zephyr, что этот UART должен использоваться для консоли (printk) */
+/ {
+    chosen {
+        zephyr,console = &usart1;
+        zephyr,shell-uart = &usart1;
+    };
+};
+////////////////////////////////////////////
+
+/* Включаем DMA1 — он не помешает, так как в &spi2 мы его не привязываем */
+
+&dma1 {
+	status = "okay";
+};
+
+/* Дописываем пины ВНУТРЬ системного контроллера pinctrl */
+&pinctrl {
+    /* Плоский узел для тактового сигнала */
+    spi2_sck_pb10: spi2_sck_pb10 {
+        pinmux = <STM32_PINMUX('B', 10, AF5)>;
+        drive-push-pull;
+	bias-pull-down;
+        slew-rate = "very-high-speed";
+    };
+
+    /* Плоский узел для входа данных (MISO) */
+    spi2_miso_pc2: spi2_miso_pc2 {
+        pinmux = <STM32_PINMUX('C', 2, AF5)>;
+        bias-disable; /* Для входа MISO лучше выключить push-pull */
+    };
+
+    /* Плоский узел для выхода данных (MOSI) */
+    spi2_mosi_pc3: spi2_mosi_pc3 {
+        pinmux = <STM32_PINMUX('C', 3, AF5)>;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+};
+
+&spi2 {
+	status = "okay";
+
+	/* МАГИЯ ЗДЕСЬ: Перечисляем все три кастомных узла через пробел! */
+	/* Zephyr инициализирует их одновременно для одной шины SPI2 */
+	pinctrl-0 = <&spi2_sck_pb10 &spi2_miso_pc2 &spi2_mosi_pc3>;
+	pinctrl-names = "default";
+
+	/* Ваш кастомный пин CS. Укажите ваш реальный порт/номер ножки */
+	cs-gpios = <&gpiof 11 GPIO_ACTIVE_LOW>;
+
+	ads1234_spi: ads1234_spi@0 {
+		compatible = "vnd,spi-device";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+	};
+};
+
+//
+////////////////////////////////////////////
+
+
+/* Включаем DMA1, так как SPI2 работает через него */
+// &dma1 {
+// 	status = "okay";
+// };
+
+// &pinctrl {
+//     /* Создаем ТРИ отдельных узла для SPI2 */
+//     spi2_sck_custom: spi2_sck_custom {
+//         pinmux = <STM32_PINMUX('C', 2, AF5)>;
+//         drive-push-pull;
+//         slew-rate = "very-high-speed";
+//     };
+//     spi2_miso_custom: spi2_miso_custom {
+//         pinmux = <STM32_PINMUX('B', 10, AF5)>;
+//         drive-push-pull;
+//         slew-rate = "very-high-speed";
+//     };
+//     spi2_mosi_custom: spi2_mosi_custom {
+//         pinmux = <STM32_PINMUX('C', 3, AF5)>;
+//         drive-push-pull;
+//         slew-rate = "very-high-speed";
+//     };
+// };
+
+
+// &spi2 {
+//     status = "okay";
+//     /* Ссылаемся на все три созданных узла через пробел */
+//     pinctrl-0 = <&spi2_sck_custom &spi2_miso_custom &spi2_mosi_custom>;
+//     pinctrl-names = "default";
+
+//     /* DMA1 для SPI2 на F7: TX - Stream 4, RX - Stream 3, Channel 0 */
+//     dmas = <&dma1 4 0 0x400 0x0>,
+//            <&dma1 3 0 0x400 0x0>;
+//     dma-names = "tx", "rx";
+
+//     slow_spi_dev2: spi-device@0 {
+//         compatible = "vnd,spi-device";
+//         reg = <0>;
+//         spi-max-frequency = <1000000>;
+//     };
+// };
+
+/* 1. Убеждаемся, что контроллер порта G включен */
+&gpiof {
+	status = "okay";
+};
+
+&gpiog {
+	status = "okay";
+};
+
+
+/ {
+	 //Имя контейнера делаем тоже понятным и без префикса "my"
+	status_leds {
+		compatible = "gpio-leds";
+
+		led_green: led-green {
+			gpios = <&gpiog 0 GPIO_ACTIVE_HIGH>;
+//			gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>;
+			label = "LED GREEN";
+		};
+
+		led_red: led-red {
+			gpios = <&gpiog 1 GPIO_ACTIVE_HIGH>;
+//			gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>;
+			label = "LED RED";
+		};
+
+		led_blue: led-blue {
+			gpios = <&gpiog 3 GPIO_ACTIVE_HIGH>;
+//			gpios = <&gpiob 14 GPIO_ACTIVE_HIGH>;
+			label = "LED BLUE";
+		};
+
+        ad_mx_0: ad-mx-0 {
+			gpios = <&gpiof 2 GPIO_ACTIVE_HIGH>;
+			label = "ADC_MUX_A0";
+		};
+
+        ad_mx_1: ad-mx-1 {
+			gpios = <&gpiof 3 GPIO_ACTIVE_HIGH>;
+			label = "ADC_MUX_A1";
+		};
+
+        ad_g_0: ad-g-0 {
+			gpios = <&gpiof 5 GPIO_ACTIVE_HIGH>;
+			label = "ADC_GAIN_0";
+		};
+
+        ad_g_1: ad-g-1 {
+			gpios = <&gpiof 4 GPIO_ACTIVE_HIGH>;
+			label = "ADC_GAIN_1";
+		};
+
+        cb_mx_0: cb-mx-0 {
+			gpios = <&gpiof 6 GPIO_ACTIVE_HIGH>;
+			label = "CALIBR_MX_A0";
+		};
+
+        cb_mx_1: cb-mx-1 {
+			gpios = <&gpiof 7 GPIO_ACTIVE_HIGH>;
+			label = "CALIBR_MX_A1";
+		};
+
+        cb_mx_en: cb-mx-en {
+			gpios = <&gpiof 8 GPIO_ACTIVE_HIGH>;
+			label = "CALIBR_MX_EN";
+		};
+
+        ad_speed: ad-speed {
+			gpios = <&gpiof 9 GPIO_ACTIVE_HIGH>;
+			label = "ADC_SPEED";
+		};
+
+        ad_rst_n: ad-rst-n {
+			gpios = <&gpiof 10 GPIO_ACTIVE_HIGH>;
+			label = "ADC_NEG_RESET";
+		};
+
+	};
+};
+/* Активируем порт B микроконтроллера */
+&gpiob {
+	status = "okay";
+};
+
+/ {
+	/* Группа для входных пинов и кнопок */
+	uc_inputs {
+		compatible = "gpio-keys";
+
+		/* Имя ноды для EXTI прерывания (PB15) */
+		ad_drdy: ad-drdy {
+			/* Настройка: порт B, пин 15. Флаг ACTIVE_LOW означает, */
+			/* что логическим считается нулевой уровень (спад) */
+			gpios = <&gpiob 15 GPIO_ACTIVE_LOW>;
+			label = "ADS1234 DOUT/DRDY INTERRUPT";
+		};
+	};
+};
+
+
+/*=================================*/
+// 1. Настраиваем мультиплексирование ножек (Pin Control)
+//&pinctrl {
+//	Переопределяем или проверяем конфигурацию пинов для usart1
+//	usart1_tx_pa9: usart1_tx_pa9 {
+//		pinmux = <STM32_PINMUX('A', 9, AF7)>; /* PA9 как Alternate Function 7 (UART1_TX) */
+//	};
+//	usart1_rx_pa10: usart1_rx_pa10 {
+//		pinmux = <STM32_PINMUX('A', 10, AF7)>; /* PA10 как AF7 (UART1_RX) */
+//		bias-pull-up; /* Включаем подтяжку для линии RX */
+//	};
+//};
+
+//2. Активируем сам UART1 и привязываем к нему пины
+//&usart1 {
+//	status = "okay";
+//	current-speed = <115200>;
+//	pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
+//	pinctrl-names = "default";
+//};
+
+ //3. Говорим Zephyr, что этот UART должен использоваться для консоли (printk)
+// / {
+//	chosen {
+//		zephyr,console = &usart1;
+//		zephyr,shell-uart = &usart1;
+//	};
+//};
+
+///////////////============0==========
+// /* 1. Создаем узел пинов строго по спецификации st,stm32-pinctrl */
+// &pinctrl {
+// 	eth_rmii_custom: eth_rmii_custom {
+// 		/* Все пины перечислены внутри ОДНИХ скобок через пробел */
+// 		pinmux = <STM32_PINMUX('A', 1, AF11)
+// 		          STM32_PINMUX('A', 2, AF11)
+// 		          STM32_PINMUX('C', 1, AF11)
+// 		          STM32_PINMUX('D', 10, AF11)
+// 		          STM32_PINMUX('C', 4, AF11)
+// 		          STM32_PINMUX('C', 5, AF11)
+// 		          STM32_PINMUX('G', 11, AF11)
+// 		          STM32_PINMUX('G', 13, AF11)
+// 		          STM32_PINMUX('G', 14, AF11)>;
+// 	};
+// };
+
+// /* 2. Активируем Ethernet-контроллер */
+// &mac {
+// 	status = "okay";
+// 	pinctrl-0 = <&eth_rmii_custom>;
+// 	pinctrl-names = "default";
+
+// 	mdio {
+// 		compatible = "st,stm32-mdio";
+// 		#address-cells = <1>;
+// 		#size-cells = <0>;
+// 		status = "okay";
+
+// 		ethernet_phy: ethernet-phy@0 {
+// 			compatible = "ethernet-phy";
+// 			reg = <0>;
+// 			status = "okay";
+// 		};
+// 	};
+// };
+/////////////////////////////====2
+/* 1. Создаем 9 независимых плоских узлов прямо в корне &pinctrl */
+// &pinctrl {
+// 	my_eth_ref_clk: my_eth_ref_clk {
+// 		pinmux = <STM32_PINMUX('A', 1, AF11)>;
+// 	};
+// 	my_eth_mdio: my_eth_mdio {
+// 		pinmux = <STM32_PINMUX('A', 2, AF11)>;
+// 	};
+// 	my_eth_mdc: my_eth_mdc {
+// 		pinmux = <STM32_PINMUX('C', 1, AF11)>;
+// 	};
+// 	my_eth_crs_dv: my_eth_crs_dv {
+// 		pinmux = <STM32_PINMUX('D', 10, AF11)>;
+// 	};
+// 	my_eth_rxd0: my_eth_rxd0 {
+// 		pinmux = <STM32_PINMUX('C', 4, AF11)>;
+// 	};
+// 	my_eth_rxd1: my_eth_rxd1 {
+// 		pinmux = <STM32_PINMUX('C', 5, AF11)>;
+// 	};
+// 	my_eth_tx_en: my_eth_tx_en {
+// 		pinmux = <STM32_PINMUX('G', 11, AF11)>;
+// 	};
+// 	my_eth_txd0: my_eth_txd0 {
+// 		pinmux = <STM32_PINMUX('G', 13, AF11)>;
+// 	};
+// 	my_eth_txd1: my_eth_txd1 {
+// 		pinmux = <STM32_PINMUX('G', 14, AF11)>;
+// 	};
+// };
+
+// /* 2. Активируем Ethernet-контроллер и перечисляем плоские узлы */
+// &mac {
+// 	status = "okay";
+// 	pinctrl-0 = <&my_eth_ref_clk &my_eth_mdio &my_eth_mdc
+// 	             &my_eth_crs_dv &my_eth_rxd0 &my_eth_rxd1
+// 	             &my_eth_tx_en &my_eth_txd0 &my_eth_txd1>;
+// 	pinctrl-names = "default";
+
+// 	mdio {
+// 		compatible = "st,stm32-mdio";
+// 		#address-cells = <1>;
+// 		#size-cells = <0>;
+// 		status = "okay";
+
+// 		ethernet_phy: ethernet-phy@0 {
+// 			compatible = "ethernet-phy";
+// 			reg = <0>;
+// 			status = "okay";
+// 		};
+// 	};
+// };
+
+
+
+
+/////////////////=3=////////
+/* 1. Пины остаются теми же плоскими узлами */
+// &pinctrl {
+// 	my_eth_ref_clk: my_eth_ref_clk {
+// 		pinmux = <STM32_PINMUX('A', 1, AF11)>;
+// 	};
+// 	my_eth_mdio: my_eth_mdio {
+// 		pinmux = <STM32_PINMUX('A', 2, AF11)>;
+// 	};
+// 	my_eth_mdc: my_eth_mdc {
+// 		pinmux = <STM32_PINMUX('C', 1, AF11)>;
+// 	};
+// 	my_eth_crs_dv: my_eth_crs_dv {
+// 		pinmux = <STM32_PINMUX('D', 10, AF11)>;
+// 	};
+// 	my_eth_rxd0: my_eth_rxd0 {
+// 		pinmux = <STM32_PINMUX('C', 4, AF11)>;
+// 	};
+// 	my_eth_rxd1: my_eth_rxd1 {
+// 		pinmux = <STM32_PINMUX('C', 5, AF11)>;
+// 	};
+// 	my_eth_tx_en: my_eth_tx_en {
+// 		pinmux = <STM32_PINMUX('G', 11, AF11)>;
+// 	};
+// 	my_eth_txd0: my_eth_txd0 {
+// 		pinmux = <STM32_PINMUX('G', 13, AF11)>;
+// 	};
+// 	my_eth_txd1: my_eth_txd1 {
+// 		pinmux = <STM32_PINMUX('G', 14, AF11)>;
+// 	};
+// };
+
+// /* 2. Активируем Ethernet-контроллер (без пинов шины MDIO) */
+// &mac {
+// 	status = "okay";
+// 	/* Здесь остаются только 7 пинов самого интерфейса RMII */
+// 	pinctrl-0 = <&my_eth_ref_clk &my_eth_crs_dv
+// 	             &my_eth_rxd0 &my_eth_rxd1
+// 	             &my_eth_tx_en &my_eth_txd0 &my_eth_txd1>;
+// 	pinctrl-names = "default";
+
+// 	/* 3. Передаем пины управления MDIO непосредственно в узел mdio */
+// 	mdio {
+// 		compatible = "st,stm32-mdio";
+// 		#address-cells = <1>;
+// 		#size-cells = <0>;
+// 		status = "okay";
+
+// 		/* Добавляем обязательные свойства, которые требовала ошибка */
+// 		pinctrl-0 = <&my_eth_mdio &my_eth_mdc>;
+// 		pinctrl-names = "default";
+
+// 		ethernet_phy: ethernet-phy@0 {
+// 			compatible = "ethernet-phy";
+// 			reg = <0>;
+// 			status = "okay";
+// 		};
+// 	};
+// };
+
+
+/* === ОФИЦИАЛЬНАЯ НАСТРОЙКА ETHERNET ДЛЯ NUCLEO-F756ZG === */
+&pinctrl {
+	/* Используем стандартные пины Nucleo, обратите внимание на PA7 */
+	my_eth_ref_clk: my_eth_ref_clk { pinmux = <STM32_PINMUX('A', 1, AF11)>; };
+	my_eth_mdio: my_eth_mdio { pinmux = <STM32_PINMUX('A', 2, AF11)>; };
+	my_eth_crs_dv: my_eth_crs_dv { pinmux = <STM32_PINMUX('A', 7, AF11)>; }; /* На Nucleo это PA7! */
+	my_eth_mdc: my_eth_mdc { pinmux = <STM32_PINMUX('C', 1, AF11)>; };
+	my_eth_rxd0: my_eth_rxd0 { pinmux = <STM32_PINMUX('C', 4, AF11)>; };
+	my_eth_rxd1: my_eth_rxd1 { pinmux = <STM32_PINMUX('C', 5, AF11)>; };
+	my_eth_tx_en: my_eth_tx_en { pinmux = <STM32_PINMUX('G', 11, AF11)>; };
+	my_eth_txd0: my_eth_txd0 { pinmux = <STM32_PINMUX('G', 13, AF11)>; };
+	my_eth_txd1: my_eth_txd1 { pinmux = <STM32_PINMUX('B', 13, AF11)>; };
+};
+
+&mac {
+	status = "okay";
+	pinctrl-0 = <&my_eth_ref_clk &my_eth_crs_dv &my_eth_rxd0 &my_eth_rxd1 &my_eth_tx_en &my_eth_txd0 &my_eth_txd1>;
+	pinctrl-names = "default";
+
+	mdio {
+		compatible = "st,stm32-mdio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "okay";
+		pinctrl-0 = <&my_eth_mdio &my_eth_mdc>;
+		pinctrl-names = "default";
+
+		/* Прописываем PHY на адрес 0, который использует Nucleo */
+		ethernet_phy: ethernet-phy@0 {
+			compatible = "ethernet-phy";
+			reg = <0>;
+			status = "okay";
+		};
+	};
+};
+
+/* Активируем встроенный аппаратный генератор случайных чисел */
+&rng {
+	status = "okay";
+};
+
+
+/* Объявляем Modbus TCP сервер на уровне Devicetree */
+/ {
+	modbus_tcp_server: modbus_tcp_server {
+		compatible = "zephyr,modbus-server";
+		status = "okay";
+	};
+};
