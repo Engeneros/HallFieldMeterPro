@@ -51,15 +51,27 @@ void AdcSequencer::start()
     gpio_pin_interrupt_configure_dt(adDataRdy, GPIO_INT_EDGE_TO_ACTIVE);
  
     // 2. Запускаем поток
+    // k_thread_create(&threadData,
+    //             threadStack,
+    //             K_KERNEL_STACK_SIZEOF(threadStack),
+    //             AdcSequencer::threadEntryThunk, 
+    //             this,                           
+    //             nullptr, nullptr,               
+    //             K_PRIO_COOP(5),                 
+    //             0,
+    //             K_NO_WAIT);
+
     k_thread_create(&threadData,
                 threadStack,
                 K_KERNEL_STACK_SIZEOF(threadStack),
                 AdcSequencer::threadEntryThunk, 
-                this,                           
-                nullptr, nullptr,               
-                K_PRIO_COOP(5),                 
+                this, nullptr, nullptr,               
+                K_PRIO_PREEMPT(5), // <-- ИСПРАВЛЕНО: Теперь поток вытесняемый!
                 0,
                 K_NO_WAIT);
+
+
+
     isRunning = true;
 }
 
@@ -73,7 +85,7 @@ extern "C" void AdcSequencer::drdyGpioCallbackThunk(const struct device *port,
     
     // Безопасно отдаем семафор в контексте прерывания (ISR)
     k_sem_give(&instance->drdySem);
-}
+} 
 
 void AdcSequencer::threadEntryThunk(void *p1, void *p2, void *p3)
 {
@@ -138,6 +150,7 @@ void AdcSequencer::acq()
                 printk("OOPS!!: no valid samples\n"); 
             k_mutex_unlock(&adc_rd);                
         }
+        k_msleep(5);
     }
 }
 

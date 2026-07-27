@@ -20,7 +20,7 @@
 #include "mbs.hpp"
 #include "console.hpp"
 
-// Функция, которая вызовется, когда пользователь введет команду в терминал
+//Функция, которая вызовется, когда пользователь введет команду в терминал
 extern "C"{
     static int cmd_my_test(const struct shell *sh, size_t argc, char **argv)
     {
@@ -49,8 +49,8 @@ int main(void)
     modbus_start();
     GPO* yellow = getYellowLED();
     printk("wellcome ADS1234 *:v21:*\n");
-  //  AbstractADC* fmL = getFieldMeterL();
-   // k_msleep(10000);
+  ////  AbstractADC* fmL = getFieldMeterL();
+   //// k_msleep(10000);
     AdcSequencer* sqr = getAdcSequencer();
     sqr->start();
     k_msleep(1200);
@@ -58,13 +58,14 @@ int main(void)
     int32_t adData[ACQ_CHAN_NUM];
     int32_t mbData[ACQ_CHAN_NUM];
 
-    printk("v0: System started type 'pr <your_string>'in terminal.\n");
+    printk("v4wMBs: System started type 'pr <your_string>'in terminal.\n");
  //   shell_print("it is shall \n");
+ 
     while(1) 
     {
         yellow->toggle();
-      sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
-      refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
+//      sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
+ //---     refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
 //        for (uint8_t ch = 0; ch < 4; ++ch )
  //         printk("ADS[%d]=%d.%dmV.\n", ch, adData[ch] / 1000, adData[ch] % 1000);
  //       copy_input_regs(mbData, 0, 4);

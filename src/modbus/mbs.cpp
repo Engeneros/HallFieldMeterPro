@@ -17,7 +17,7 @@
 
 //#include "mbs.hpp"
 #define MB_THREAD_STACK_SIZE 2048
-#define MB_THREAD_PRIORITY 1
+#define MB_THREAD_PRIORITY 10
 
 static struct k_mutex adc_data_mutex;
 
