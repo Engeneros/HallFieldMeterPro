@@ -75,7 +75,7 @@ int main(void)
 
    //    yellow->toggle();
         grn->toggle();
-        sqr->getData(adData);//, HALL_SENS_L, TEMPERATURE);
+        sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
         refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
         
 //        for (uint8_t ch = 0; ch < 4; ++ch )
@@ -84,7 +84,7 @@ int main(void)
  //       printk("---------------------------\n");
  //       for (uint8_t ch = 0; ch < 4; ++ch )
  //         printk("mbData[%d]=%d.%dmV.\n", ch, mbData[ch] / 1000, mbData[ch] % 1000);
-        k_msleep(1800);
+        k_msleep(600);
 //        x *= x;
 //        printk(" x=%f;", x);
     }

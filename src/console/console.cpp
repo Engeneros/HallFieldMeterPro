@@ -74,7 +74,9 @@ void Console::printClbData()
     adcSys->getData(adDt);
     adcSys->GetClbData(uVpq);
     for(uint8_t ch = CLB_NULL; ch < ACQ_CHAN_NUM; ++ch)
-        printk("CLB[%d]=%dq; %fuVpq\n", ch, adDt[ch], uVpq[ch] );
+        printk("CLB[%d]=%dq \n", ch, adDt[ch]);
+    for(uint8_t ch = HALL_SENS_L; ch <  CLB_NULL; ++ch)
+        printk("uVpQ[%d]=%f \n", ch, uVpq[ch] );
 }
 
 void Console::disAutoClb()
@@ -111,10 +113,9 @@ void Console::getAdcData()
     int32_t adDt[ACQ_CHAN_NUM];
     adcSys->getData(adDt);
     for (uint8_t ch = HALL_SENS_L; ch < HALL_CURRENT; ++ch )
-        printk("UHall[%d]=%d.%dmV.\n", ch, adDt[ch] / 1000, adDt[ch] % 1000);
-    uint32_t uA = adDt[HALL_CURRENT];// * 5;   
-    printk("Hall Current=%d.%d mA.\n", uA /1000000, uA % 1000000);
-    printk("UPt1000=%d.%dmV.\n", adDt[TEMPERATURE] / 1000, adDt[TEMPERATURE] % 1000);        
+        printk("UHall[%d]=%fmV\n", ch, static_cast <double>(adDt[ch]) / 1000.0);
+    printk("Hall Current=%fmA\n", static_cast <double>(adDt[HALL_CURRENT]) / 1000000.0);
+    printk("UPt1000=%fmV.\n", static_cast <double>(adDt[TEMPERATURE]) / 1000.0);        
 }
 
 void Console::badCmd()
