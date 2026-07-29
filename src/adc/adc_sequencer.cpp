@@ -60,7 +60,7 @@ void AdcSequencer::start()
     //             K_PRIO_COOP(5),                 
     //             0,
     //             K_NO_WAIT);
-
+    //clbRequest = true;
     k_thread_create(&threadData,
                 threadStack,
                 K_KERNEL_STACK_SIZEOF(threadStack),
@@ -104,6 +104,7 @@ void AdcSequencer::acq()
     int32_t summ;
     int err;
     int count;
+    static int cnt = 0;
     for (int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
     {
         AbstractADC* currChan = chanSet[ch];
@@ -140,10 +141,18 @@ void AdcSequencer::acq()
             k_mutex_lock(&adc_rd, K_FOREVER); 
             if(count > 0)
             {
+ //               if(ch == HALL_CURRENT)
+ //                   ++cnt;
                 tempVal = uVperQuant[ch]*(static_cast<double>(summ)/static_cast<double>(count));
+//               if(((cnt % 8) == 0) && (ch == HALL_CURRENT))
+//                    printk ("S=%dq, cnt=%d, %fuV;  uvPq=%f\n", summ, count, tempVal, uVperQuant[ch]);
                 tempVal -= static_cast<double>(sensorShift[ch]);
+ //               if(((cnt % 8) == 0) && (ch == HALL_CURRENT))
+ //                   printk ("wShift=%f\n", tempVal);
                 tempVal *= sensorScale[ch];
                 acqData[ch] = static_cast<int32_t>(tempVal);
+//               if(((cnt % 8) == 0) && (ch == HALL_CURRENT))
+ //                   printk ("it is: %fnA=%dnA;\n",  tempVal, acqData[ch]);
  //               printk("  ch%d=%d - %d;  c=%d;  ", ch, acqData[ch], (int) tempVal, count);
             }
             else 
@@ -152,6 +161,12 @@ void AdcSequencer::acq()
         }
         k_msleep(5);
     }
+}
+
+void AdcSequencer::GetClbData(double* uVPerQ)
+{
+    for(int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
+        uVPerQ[ch] = uVperQuant[ch];
 }
 
 void AdcSequencer::clbProc()
@@ -216,36 +231,64 @@ void AdcSequencer::clbProc()
 void AdcSequencer::threadLoop()
 {
     static const unsigned int SAMPLES_PER_CYCLE = (TRASH_SAMPLE_NUM + SAMPLES_PER_ACQ)*CLB_NULL;
+    clbRequest = false;
+    clbProc();
     while (true)
-    {   
-        clbRequest = false;
+    {          
         for (acqCycCnt = (autoClbTsec * 100)/SAMPLES_PER_CYCLE; acqCycCnt > 0; --acqCycCnt) 
         {
             acq();
             if (clbRequest)
             {
+                clbRequest = false;
                 clbProc();
                 break;
             }
+            
         }               
         if(autoClbEn && !clbRequest)            
             clbProc();
     }
  }
-
+#include "board_devs.hpp"
+#include "gpo.hpp"
+void AdcSequencer::trash()
+{
+   GPO* yLed = getYellowLED();
+   yLed->toggle();
+   printk("trash");
+}
 void AdcSequencer::getData  (int32_t* dataOut) 
 {
+    // static int cnt = 0;
+    // GPO* yLed = getYellowLED();
+     GPO* redL = getRedLED();
+    // redL->toggle();
+   
     k_mutex_lock(&adc_rd, K_FOREVER);       
+ //   ++cnt;
     for (int ch = 0; ch < ACQ_CHAN_NUM; ++ch)
+    {
         dataOut[ch] = acqData[ch];
+ //       if ((cnt % 16) == 0)
+  //      printk("ch:%d buf=%d; acq=%d\n", ch, dataOut[ch], acqData[ch]);
+    }
     k_mutex_unlock(&adc_rd); 
 }
 
 void AdcSequencer::getData(int32_t* dataOut, unsigned char startCh, unsigned char endCh)
 {
+ //   static int cnt = 0;
+ //   GPO* yLed = getYellowLED();
+ //   GPO* redL = getRedLED();
+ //   ++cnt;
    k_mutex_lock(&adc_rd, K_FOREVER);       
     for (int ch = startCh; ch <= endCh; ++ch)
+    {        
         dataOut[ch] = acqData[ch];
+    //    if((cnt % 8) == 0)
+    //        printk("--ch:%d buf=%d; acq=%d--\n", ch, dataOut[ch], acqData[ch]);
+    }
     k_mutex_unlock(&adc_rd); 
 }
 

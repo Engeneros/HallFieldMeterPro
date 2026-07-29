@@ -31,6 +31,8 @@ public:
     void start();
     void getData(int32_t* dataOut);
     void getData(int32_t* dataOut, unsigned char startCh, unsigned char endCh);
+    void GetClbData(double* uVPerQ);
+    void trash();
  
     void calibrateStart();
     bool isClbDone();

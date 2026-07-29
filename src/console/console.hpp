@@ -8,6 +8,7 @@ public:
     Console();
     void printMenu();
     void badCmd(); 
+
     void parser(unsigned int argc, char **argv);
     virtual ~Console(){}
 private:

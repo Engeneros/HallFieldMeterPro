@@ -159,15 +159,22 @@ AbstractADC* getRefMinusMeter()
 
 AdcSequencer* getAdcSequencer()
 {
+    static bool isCreated = false;
     static AdcSequencer adcSqr = AdcSequencer(&drdy_spec);
-    printk("--------Sequencer Created----------\n");
-    adcSqr.addChan( getFieldMeterL(), HALL_SENS_L, 1, 0, 1.0);
-    adcSqr.addChan( getFieldMeterR(), HALL_SENS_R, 1, 0, 1.0);
-    adcSqr.addChan( getCurrentMeter(), HALL_CURRENT, 1, 0, 5.0);
-    adcSqr.addChan( getTemperatureMeter(), TEMPERATURE, 2, 0, 1.0);
-    adcSqr.addChan(getZeroMeter(),CLB_NULL, 1, 0, 1.0);
-    adcSqr.addChan(getRefPlusMeter(), CLB_PLUS, 1, 0, 1.0);
-    adcSqr.addChan(getRefMinusMeter(), CLB_MINUS, 1, 0, 1.0);
+    if(isCreated == false)
+    {
+        isCreated = true;
+        printk("--------Sequencer Created----------\n");      
+        adcSqr.addChan( getFieldMeterL(), HALL_SENS_L, 1, 0, 1.0);
+        adcSqr.addChan( getFieldMeterR(), HALL_SENS_R, 1, 0, 1.0);
+        adcSqr.addChan( getCurrentMeter(), HALL_CURRENT, 1, 0, 5.0);
+        adcSqr.addChan( getTemperatureMeter(), TEMPERATURE, 2, 0, 1.0);
+        adcSqr.addChan(getZeroMeter(),CLB_NULL, 1, 0, 1.0);
+        adcSqr.addChan(getRefPlusMeter(), CLB_PLUS, 1, 0, 1.0);
+        adcSqr.addChan(getRefMinusMeter(), CLB_MINUS, 1, 0, 1.0);
+    }
+    else
+        printk("======Sequencer ready======= \n");
     return &adcSqr;
 }
 // AbstractADC* getFieldMeterR();

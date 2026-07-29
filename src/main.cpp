@@ -48,31 +48,45 @@ int main(void)
 {
     modbus_start();
     GPO* yellow = getYellowLED();
+    GPO* grn = getGreenLED();
     printk("wellcome ADS1234 *:v21:*\n");
   ////  AbstractADC* fmL = getFieldMeterL();
    //// k_msleep(10000);
     AdcSequencer* sqr = getAdcSequencer();
     sqr->start();
     k_msleep(1200);
-    sqr->calibrateStart();
-    int32_t adData[ACQ_CHAN_NUM];
+   // sqr->calibrateStart();
+    // while(sqr->isClbDone() == false)
+    // {        
+    // }
+  int32_t adData[ACQ_CHAN_NUM];
     int32_t mbData[ACQ_CHAN_NUM];
 
-    printk("v4wMBs: System started type 'pr <your_string>'in terminal.\n");
+
+    printk("v26.9 : System started type 'pr <your_string>'in terminal.\n");
  //   shell_print("it is shall \n");
- 
+ //   Console* csl =  getConsole();
+ //   csl->calibrate();
+ //   char* CLBRT[] = {"pr", "clb"};
+//    csl->parser(2, CLBRT);
+    //double  x = 1.00001;
     while(1) 
     {
-        yellow->toggle();
-//      sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
- //---     refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
+
+   //    yellow->toggle();
+        grn->toggle();
+        sqr->getData(adData);//, HALL_SENS_L, TEMPERATURE);
+        refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
+        
 //        for (uint8_t ch = 0; ch < 4; ++ch )
  //         printk("ADS[%d]=%d.%dmV.\n", ch, adData[ch] / 1000, adData[ch] % 1000);
  //       copy_input_regs(mbData, 0, 4);
  //       printk("---------------------------\n");
  //       for (uint8_t ch = 0; ch < 4; ++ch )
  //         printk("mbData[%d]=%d.%dmV.\n", ch, mbData[ch] / 1000, mbData[ch] % 1000);
-        k_msleep(600);
+        k_msleep(1800);
+//        x *= x;
+//        printk(" x=%f;", x);
     }
     return 0;
 }

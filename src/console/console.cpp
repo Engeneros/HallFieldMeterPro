@@ -6,10 +6,10 @@
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 0;
+static const uint16_t FW_VERSION = 2;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "16.07.26";
+static const char FW_DATE [] = "29.07.26";
 static const char IFC_DATE [] = "10.07.26";
 
 enum CMD_SET
@@ -70,9 +70,11 @@ void Console::calibrate()
 void Console::printClbData()
 {
     int32_t adDt[ACQ_CHAN_NUM];
+    double uVpq[CLB_NULL];
     adcSys->getData(adDt);
+    adcSys->GetClbData(uVpq);
     for(uint8_t ch = CLB_NULL; ch < ACQ_CHAN_NUM; ++ch)
-        printk("CLB[%d]=%dq\n", ch, adDt[ch]);
+        printk("CLB[%d]=%dq; %fuVpq\n", ch, adDt[ch], uVpq[ch] );
 }
 
 void Console::disAutoClb()
