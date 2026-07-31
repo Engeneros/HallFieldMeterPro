@@ -5,6 +5,7 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/shell/shell.h>
 #include <zephyr/console/console.h>
+#include <stdio.h>
 
 // #include <zephyr/net/net_if.h>
 // #include <zephyr/net/socket.h>  /* Добавляем стандартные POSIX сокеты */
@@ -12,6 +13,10 @@
 #include <zephyr/logging/log.h>
 #include <string.h>
 #include <stdint.h>
+
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/eeprom.h>
+#include <zephyr/device.h>
 
 #include "board_devs.hpp"
 #include "gpo.hpp"
@@ -43,9 +48,12 @@ extern "C"{
 // Регистрируем команду "process_str" в терминале
 SHELL_CMD_REGISTER(pr, NULL, "Terminal String Process", cmd_my_test);
 
+/* Получаем указатель на устройство EEPROM из дерева устройств по его метке */
+const struct device *eeprom_dev = DEVICE_DT_GET(DT_NODELABEL(eeprom_at24));
 
 int main(void)
 {
+    int ret;
     modbus_start();
     GPO* yellow = getYellowLED();
     GPO* grn = getGreenLED();
@@ -64,6 +72,15 @@ int main(void)
 
 
     printk("v26.9 : System started type 'pr <your_string>'in terminal.\n");
+    if (!device_is_ready(eeprom_dev))
+    {
+        printk("Ошибка: EEPROM устройство не готово!\n");
+        return - 1;
+    }
+
+    uint8_t wrbf[32] = {0x55};
+    sprintf( (char*)wrbf,"Hello Zephyr!");
+    uint8_t rdbf[32] = {0};
  //   shell_print("it is shall \n");
  //   Console* csl =  getConsole();
  //   csl->calibrate();
@@ -87,6 +104,18 @@ int main(void)
         k_msleep(600);
 //        x *= x;
 //        printk(" x=%f;", x);
+        ret = eeprom_write(eeprom_dev, 0x00, wrbf, sizeof(wrbf));
+        if (ret < 0) {
+            printk("Write ERR: %d\n", ret);
+        }
+        k_msleep(50);
+        /* Читаем данные обратно */
+        ret = eeprom_read(eeprom_dev, 0x00, rdbf, sizeof(rdbf));
+        if (ret < 0) {
+            printk("read err: %d\n", ret);
+        } else {
+            printk("readed from EEPROM: %s\n", rdbf);
+        }
     }
     return 0;
 }
