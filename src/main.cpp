@@ -2,7 +2,7 @@
 // #include <zephyr/device.h>
 // #include <zephyr/drivers/spi.h>
 //#include <zephyr/drivers/gpio.h>
-#include <zephyr/sys/printk.h>
+ #include <zephyr/sys/printk.h>
 #include <zephyr/shell/shell.h>
 #include <zephyr/console/console.h>
 #include <stdio.h>
@@ -49,7 +49,7 @@ extern "C"{
 SHELL_CMD_REGISTER(pr, NULL, "Terminal String Process", cmd_my_test);
 
 /* Получаем указатель на устройство EEPROM из дерева устройств по его метке */
-const struct device *eeprom_dev = DEVICE_DT_GET(DT_NODELABEL(eeprom_at24));
+//const struct device *eeprom_dev = DEVICE_DT_GET(DT_NODELABEL(eeprom_at24));
 
 int main(void)
 {
@@ -67,16 +67,16 @@ int main(void)
     // while(sqr->isClbDone() == false)
     // {        
     // }
-  int32_t adData[ACQ_CHAN_NUM];
+    int32_t adData[ACQ_CHAN_NUM];
     int32_t mbData[ACQ_CHAN_NUM];
 
 
     printk("v26.9 : System started type 'pr <your_string>'in terminal.\n");
-    if (!device_is_ready(eeprom_dev))
-    {
-        printk("Ошибка: EEPROM устройство не готово!\n");
-        return - 1;
-    }
+    // if (!device_is_ready(eeprom_dev))
+    // {
+    //     printk("Ошибка: EEPROM устройство не готово!\n");
+    //     return - 1;
+    // }
 
     uint8_t wrbf[32] = {0x55};
     sprintf( (char*)wrbf,"Hello Zephyr!");
@@ -104,18 +104,18 @@ int main(void)
         k_msleep(600);
 //        x *= x;
 //        printk(" x=%f;", x);
-        ret = eeprom_write(eeprom_dev, 0x00, wrbf, sizeof(wrbf));
-        if (ret < 0) {
-            printk("Write ERR: %d\n", ret);
-        }
-        k_msleep(50);
-        /* Читаем данные обратно */
-        ret = eeprom_read(eeprom_dev, 0x00, rdbf, sizeof(rdbf));
-        if (ret < 0) {
-            printk("read err: %d\n", ret);
-        } else {
-            printk("readed from EEPROM: %s\n", rdbf);
-        }
+        // ret = eeprom_write(eeprom_dev, 0x00, wrbf, sizeof(wrbf));
+        // if (ret < 0) {
+        //     printk("Write ERR: %d\n", ret);
+        // }
+        // k_msleep(50);
+        // /* Читаем данные обратно */
+        // ret = eeprom_read(eeprom_dev, 0x00, rdbf, sizeof(rdbf));
+        // if (ret < 0) {
+        //     printk("read err: %d\n", ret);
+        // } else {
+        //     printk("readed from EEPROM: %s\n", rdbf);
+        // }
     }
     return 0;
 }

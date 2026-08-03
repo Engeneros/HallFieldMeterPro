@@ -22,6 +22,8 @@
     AbstractADC* getZeroMeter();
     AbstractADC* getRefPlusMeter();
     AbstractADC* getRefMinusMeter();
+    class AbstractMem;
+    AbstractMem* getBrdEEprom();
 #endif
 
 #ifdef __cplusplus

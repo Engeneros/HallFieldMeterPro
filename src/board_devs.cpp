@@ -187,3 +187,11 @@ Console* getConsole()
  static Console cli = Console();
     return &cli;
 }
+
+#include "mem.hpp"
+const struct device *eeprom_dev = DEVICE_DT_GET(DT_NODELABEL(eeprom_at24));
+AbstractMem* getBrdEEprom()
+{
+    static Mem ee = Mem(eeprom_dev);
+    return static_cast<AbstractMem*>(&ee);
+}

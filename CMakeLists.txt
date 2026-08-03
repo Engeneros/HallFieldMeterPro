@@ -18,8 +18,10 @@ target_sources(app PRIVATE
     src/leds/gpo.cpp
     src/adc/ads1234.cpp
     src/adc/adc_sequencer.cpp
-    src/time/time.cpp    src/modbus/mbs.cpp
+    src/time/time.cpp
+    src/modbus/mbs.cpp
     src/console/console.cpp
+    src/mem/mem.cpp
 )
 # Добавляем ПАПКИ к хидерам, а не сами файлы!
 target_include_directories(app PRIVATE 
@@ -29,6 +31,7 @@ target_include_directories(app PRIVATE
     src/time
     src/modbus
     src/console
+    src/mem
 )
 
 
