@@ -3,6 +3,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
 #include "abstract_adc.hpp"
+#include "abstract_mem.hpp"
 
 
 enum ACQ_CHAN
@@ -31,7 +32,9 @@ public:
     void start();
     void getData(int32_t* dataOut);
     void getData(int32_t* dataOut, unsigned char startCh, unsigned char endCh);
-    void GetClbData(double* uVPerQ);
+    void getClbData(double* uVPerQ);
+    double getVRef();
+    void   setVRef(double uV);
     void trash();
  
     void calibrateStart();
@@ -73,7 +76,10 @@ private:
     int32_t chScaleFactor [ACQ_CHAN_NUM];
     int32_t sensorShift[ACQ_CHAN_NUM];
     double sensorScale[ACQ_CHAN_NUM];
+    //vReference = 500000uV - voltage from mux calibration chanel
+    double vReference;
     bool isCalibrateDone;
+    AbstractMem* eeMem;
 };
 
  

@@ -20,5 +20,9 @@ private:
     void getAutoClbTime();
     void setAutoClbTime(unsigned int argc, char **argv);
     void getAdcData();
+    void setVRef(unsigned int argc, char **argv);
+    void getVRef();
+
+
     AdcSequencer* adcSys;
 };

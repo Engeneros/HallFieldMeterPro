@@ -49,10 +49,10 @@ int Mem::write(uint32_t addr, uint32_t nByte, uint8_t* data) noexcept
     return ret;
 }
 
-int Mem::write(uint32_t addr, double* data) noexcept
+int Mem::write(uint32_t addr, double data) noexcept
 {
     dble_and_bytes temp;
-    temp.val = *data;
+    temp.val = data;
     int ret = write(addr, sizeof(double), temp.bytes);
     if (ret < 0)
         printk("mem Write ERR: %d\n", ret);

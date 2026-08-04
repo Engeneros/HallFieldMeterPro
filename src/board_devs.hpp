@@ -1,5 +1,13 @@
 #pragma once
 
+enum BRD_EEPROM_MAP
+{
+    BRD_ADDR_VREF = 0,
+    BRD_ADDR_DESCRIPTION = 8
+}; 
+static const double MIN_REF_V = 400000;//uV
+static const double MAX_REF_V = 600000;//uV
+
 #ifdef __cplusplus
 // Этот класс виден только в C++ коде
     class GPO; 

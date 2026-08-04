@@ -2,8 +2,23 @@
 #include "adc_sequencer.hpp"
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/printk.h>
-
+#include "board_devs.hpp"
 static struct k_mutex adc_rd;
+
+
+
+double AdcSequencer::getVRef()
+{
+    return vReference;
+} //in uV
+void  AdcSequencer::setVRef(double uV)
+{
+    if(eeMem->write(BRD_ADDR_VREF, uV) == sizeof(double)) 
+    {
+        vReference = uV; 
+    }
+    calibrateStart();
+}
 
 AdcSequencer::AdcSequencer(const struct gpio_dt_spec* dR) : adDataRdy(dR),
 isCalibrateDone(true), isRunning (false)
@@ -17,6 +32,13 @@ isCalibrateDone(true), isRunning (false)
         chanSet[chan] = nullptr;
         acqData[chan] = 123.456f;
     }
+    eeMem  = getBrdEEprom();
+    double temp;
+    int res = eeMem->read(BRD_ADDR_VREF, &temp);
+    if(res == sizeof(double) && (temp > MIN_REF_V) && (temp < MAX_REF_V))
+        vReference = temp;
+    else        
+        vReference = 400000.0;
 }
 bool AdcSequencer::isClbDone()
 {
@@ -163,7 +185,7 @@ void AdcSequencer::acq()
     }
 }
 
-void AdcSequencer::GetClbData(double* uVPerQ)
+void AdcSequencer::getClbData(double* uVPerQ)
 {
     for(int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
         uVPerQ[ch] = uVperQuant[ch];
@@ -220,8 +242,9 @@ void AdcSequencer::clbProc()
     }
     for (int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
     {
-        shift_inQ[ch] = acqData[CLB_NULL]/chScaleFactor[ch];
-        uVperQuant[ch] =  1000000.0 * static_cast<double>(chScaleFactor[ch])/ static_cast<double>(acqData[CLB_PLUS] - acqData[CLB_MINUS]);
+        shift_inQ[ch] = acqData[CLB_NULL]/chScaleFactor[ch];//
+        //vReference = 500000uV - voltage from mux calibration chanel
+        uVperQuant[ch] =  vReference * 2.0 * static_cast<double>(chScaleFactor[ch])/ static_cast<double>(acqData[CLB_PLUS] - acqData[CLB_MINUS]);
     }
     printk(" zero shift is %d\n", acqData[CLB_NULL]);
     printk("%d quants per 1V\n", acqData[CLB_PLUS] - acqData[CLB_MINUS]);

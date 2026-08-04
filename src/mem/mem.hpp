@@ -17,7 +17,7 @@ public:
 //if posintiv: number of writed bytes
 //if negativ - error code
     int write(uint32_t addr, uint32_t nByte, uint8_t* data) noexcept;
-    int write(uint32_t addr, double* data) noexcept;
+    int write(uint32_t addr, double data) noexcept;
 private:
     const struct device* memChip;    
 };

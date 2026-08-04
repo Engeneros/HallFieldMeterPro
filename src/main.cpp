@@ -14,9 +14,9 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/eeprom.h>
-#include <zephyr/device.h>
+// #include <zephyr/kernel.h>
+// #include <zephyr/drivers/eeprom.h>
+// #include <zephyr/device.h>
 
 #include "board_devs.hpp"
 #include "gpo.hpp"
@@ -24,6 +24,7 @@
 #include "adc_sequencer.hpp"
 #include "mbs.hpp"
 #include "console.hpp"
+#include "abstract_mem.hpp"
 
 //Функция, которая вызовется, когда пользователь введет команду в терминал
 extern "C"{
@@ -87,6 +88,10 @@ int main(void)
  //   char* CLBRT[] = {"pr", "clb"};
 //    csl->parser(2, CLBRT);
     //double  x = 1.00001;
+ //   AbstractMem* brdMem = getBrdEEprom();
+ //   unsigned int addr = 0;
+ //   double memData = 3.1415;
+ //   int res;
     while(1) 
     {
 
@@ -94,16 +99,23 @@ int main(void)
         grn->toggle();
         sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
         refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
-        
-//        for (uint8_t ch = 0; ch < 4; ++ch )
+
+//         res = brdMem->write(addr, static_cast<double>(addr)*1.23);
+//         if(res > 0)
+//         {
+//             res = brdMem->read(addr, &memData);
+//             if(res > 0)
+//                 printk("addr=%d, data=%f\n", addr,  memData);
+//         }            
+//         addr+=sizeof(double);
+//         addr %= 2048;
+// //        for (uint8_t ch = 0; ch < 4; ++ch )
  //         printk("ADS[%d]=%d.%dmV.\n", ch, adData[ch] / 1000, adData[ch] % 1000);
  //       copy_input_regs(mbData, 0, 4);
  //       printk("---------------------------\n");
  //       for (uint8_t ch = 0; ch < 4; ++ch )
  //         printk("mbData[%d]=%d.%dmV.\n", ch, mbData[ch] / 1000, mbData[ch] % 1000);
         k_msleep(600);
-//        x *= x;
-//        printk(" x=%f;", x);
         // ret = eeprom_write(eeprom_dev, 0x00, wrbf, sizeof(wrbf));
         // if (ret < 0) {
         //     printk("Write ERR: %d\n", ret);
