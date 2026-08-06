@@ -52,7 +52,7 @@ void Console::printMenu()
     printk("enAa - enable autocalibtate \n");
     printk("tA=<SPACE><time in seconds> - set autocalibrate period \n");
     printk("tA - show autocalibrate period \n"); 
-    printk("ADC - show ADCs cchanals data");
+    printk("ADC - show ADCs cchanals data\n");
     printk("vRef= <SPACE><ref voltage in uVolt> - set reference voltage\n");
     printk("vRef get reference voltage\n");
     printk("-------------------------- \n"); 
