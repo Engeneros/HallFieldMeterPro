@@ -52,82 +52,47 @@ SHELL_CMD_REGISTER(pr, NULL, "Terminal String Process", cmd_my_test);
 /* Получаем указатель на устройство EEPROM из дерева устройств по его метке */
 //const struct device *eeprom_dev = DEVICE_DT_GET(DT_NODELABEL(eeprom_at24));
 
+#define ADC_THREAD_PRIORITY 9
+struct k_thread adc_thread_data;
+K_KERNEL_STACK_MEMBER(adc_thread_stack, 2048); 
+
+void adc_thread_entry(void *arg1, void *arg2, void *arg3)
+{
+    AdcSequencer* sqr = getAdcSequencer();
+    GPO* grn = getGreenLED();
+    sqr->start();
+    k_msleep(1200);
+    int32_t adData[ACQ_CHAN_NUM];
+    while(1) 
+    {
+        grn->toggle();
+        sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
+        refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
+        k_msleep(600);
+    }
+
+}
+
 int main(void)
 {
     int ret;
     modbus_start();
     GPO* yellow = getYellowLED();
-    GPO* grn = getGreenLED();
-    printk("wellcome ADS1234 *:v21:*\n");
-  ////  AbstractADC* fmL = getFieldMeterL();
-   //// k_msleep(10000);
-    AdcSequencer* sqr = getAdcSequencer();
-    sqr->start();
-    k_msleep(1200);
-   // sqr->calibrateStart();
-    // while(sqr->isClbDone() == false)
-    // {        
-    // }
-    int32_t adData[ACQ_CHAN_NUM];
-    int32_t mbData[ACQ_CHAN_NUM];
+    k_tid_t adc_tid = k_thread_create(&adc_thread_data,
+                                          adc_thread_stack,
+                                          K_THREAD_STACK_SIZEOF(adc_thread_stack),
+										  adc_thread_entry,
+                                          NULL, NULL, NULL,
+                                          ADC_THREAD_PRIORITY,
+                                          0,
+                                          K_NO_WAIT); // Старт немедленно
 
-
-    printk("v26.9 : System started type 'pr <your_string>'in terminal.\n");
-    // if (!device_is_ready(eeprom_dev))
-    // {
-    //     printk("Ошибка: EEPROM устройство не готово!\n");
-    //     return - 1;
-    // }
-
-    uint8_t wrbf[32] = {0x55};
-    sprintf( (char*)wrbf,"Hello Zephyr!");
-    uint8_t rdbf[32] = {0};
- //   shell_print("it is shall \n");
- //   Console* csl =  getConsole();
- //   csl->calibrate();
- //   char* CLBRT[] = {"pr", "clb"};
-//    csl->parser(2, CLBRT);
-    //double  x = 1.00001;
- //   AbstractMem* brdMem = getBrdEEprom();
- //   unsigned int addr = 0;
- //   double memData = 3.1415;
- //   int res;
-    while(1) 
+    if (adc_tid)
+        printk("adc thread created.\n");
+    printk("v5-260824 : System started type 'pr <your_string>'in terminal.\n");
     {
-
-   //    yellow->toggle();
-        grn->toggle();
-        sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
-        refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
-
-//         res = brdMem->write(addr, static_cast<double>(addr)*1.23);
-//         if(res > 0)
-//         {
-//             res = brdMem->read(addr, &memData);
-//             if(res > 0)
-//                 printk("addr=%d, data=%f\n", addr,  memData);
-//         }            
-//         addr+=sizeof(double);
-//         addr %= 2048;
-// //        for (uint8_t ch = 0; ch < 4; ++ch )
- //         printk("ADS[%d]=%d.%dmV.\n", ch, adData[ch] / 1000, adData[ch] % 1000);
- //       copy_input_regs(mbData, 0, 4);
- //       printk("---------------------------\n");
- //       for (uint8_t ch = 0; ch < 4; ++ch )
- //         printk("mbData[%d]=%d.%dmV.\n", ch, mbData[ch] / 1000, mbData[ch] % 1000);
-        k_msleep(600);
-        // ret = eeprom_write(eeprom_dev, 0x00, wrbf, sizeof(wrbf));
-        // if (ret < 0) {
-        //     printk("Write ERR: %d\n", ret);
-        // }
-        // k_msleep(50);
-        // /* Читаем данные обратно */
-        // ret = eeprom_read(eeprom_dev, 0x00, rdbf, sizeof(rdbf));
-        // if (ret < 0) {
-        //     printk("read err: %d\n", ret);
-        // } else {
-        //     printk("readed from EEPROM: %s\n", rdbf);
-        // }
+        yellow->toggle();
+        k_msleep(2000);
     }
     return 0;
 }

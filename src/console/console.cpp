@@ -6,10 +6,10 @@
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 3;
+static const uint16_t FW_VERSION = 5;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "04.08.26";
+static const char FW_DATE [] = "24.08.26";
 static const char IFC_DATE [] = "10.07.26";
 
 enum CMD_SET

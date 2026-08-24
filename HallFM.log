@@ -1,0 +1,5 @@
+260515 - RGY LEDS UART1 console tx & rx
+260820 v4 - Removed the console output of information during ModBus callback functions works
+       input_reg_rd_cb(), holding_reg_rd_cb, holding_reg_wr_cb.
+260824 v5 Removed info log and netlog output. The calculations have been moved to a low‑priority thread (priority 9)
+ and should not interfere with Modbus operation (Modbus thread priority: 8).       

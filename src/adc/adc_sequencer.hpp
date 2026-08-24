@@ -35,7 +35,7 @@ public:
     void getClbData(double* uVPerQ);
     double getVRef();
     void   setVRef(double uV);
-    void trash();
+
  
     void calibrateStart();
     bool isClbDone();
@@ -75,6 +75,8 @@ private:
     int32_t shift_inQ [ACQ_CHAN_NUM];
     int32_t chScaleFactor [ACQ_CHAN_NUM];
     int32_t sensorShift[ACQ_CHAN_NUM];
+    int32_t cnvNum[ACQ_CHAN_NUM];
+    int32_t cnvSumm[ACQ_CHAN_NUM];
     double sensorScale[ACQ_CHAN_NUM];
     //vReference = 500000uV - voltage from mux calibration chanel
     double vReference;

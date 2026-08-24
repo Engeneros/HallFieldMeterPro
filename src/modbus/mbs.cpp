@@ -17,7 +17,7 @@
 
 //#include "mbs.hpp"
 #define MB_THREAD_STACK_SIZE 2048
-#define MB_THREAD_PRIORITY 10
+#define MB_THREAD_PRIORITY 8
 
 static struct k_mutex adc_data_mutex;
 
@@ -38,7 +38,7 @@ static int holding_reg_rd_cb(uint16_t addr, uint16_t *reg)
 {
     if (addr >= MODBUS_H_REGS_COUNT) { return -EINVAL; }
     *reg = holding_regs[addr];
-    LOG_INF("Modbus Read: Reg[%d] = %d", addr, *reg);
+    //LOG_INF("Modbus Read: Reg[%d] = %d", addr, *reg);
     return 0;
 }
 
@@ -46,7 +46,7 @@ static int holding_reg_wr_cb(uint16_t addr, uint16_t reg)
 {
     if (addr >= MODBUS_H_REGS_COUNT) { return -EINVAL; }
     holding_regs[addr] = reg;
-    LOG_INF("Modbus Write: Reg[%d] -> %d", addr, reg);
+//    LOG_INF("Modbus Write: Reg[%d] -> %d", addr, reg);
     return 0;
 }
 
@@ -72,7 +72,7 @@ static int input_reg_rd_cb(uint16_t addr, uint16_t *reg)
     k_mutex_lock(&adc_data_mutex, K_FOREVER);
     *reg = input_regs[addr];
     k_mutex_unlock(&adc_data_mutex);      
-    LOG_INF("Modbus inpReg Read: Reg[%d] = %d", addr, *reg);
+//    LOG_INF("Modbus inpReg Read: Reg[%d] = %d", addr, *reg);
     return 0;
 }
 
@@ -173,7 +173,7 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
             k_sleep(K_MSEC(10));
             continue;
         }
-        LOG_INF("QModMaster has connected to socket");     
+        //LOG_INF("QModMaster has connected to socket");     
         /* Сохраняем дескриптор сокета, чтобы коллбек отправки знал, куда слать данные */
         active_client_fd = client_fd;
 
@@ -183,7 +183,7 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
             int rc = recv(client_fd, mrx_buf, sizeof(mrx_buf), 0);
             if (rc <= 0)
             {
-                LOG_INF("Master has disconnected");
+               // LOG_INF("Master has disconnected");
                 break;               
             }
             if (rc < 8) 
