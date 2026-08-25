@@ -89,7 +89,8 @@ int main(void)
 
     if (adc_tid)
         printk("adc thread created.\n");
-    printk("v5-260824 : System started type 'pr <your_string>'in terminal.\n");
+    printk("v6-260825 : System started type 'pr <your_string>'in terminal.\n");
+    while (true)
     {
         yellow->toggle();
         k_msleep(2000);
