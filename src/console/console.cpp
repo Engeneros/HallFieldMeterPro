@@ -6,15 +6,17 @@
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 6;
+static const uint16_t FW_VERSION = 7;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "25.08.26";
+static const char FW_DATE [] = "2.09.26";
 static const char IFC_DATE [] = "10.07.26";
+static const char LAST_EVENTS [] = "Modbas works and doesn’t crash";
 
 enum CMD_SET
 {
     CMD_VERSION,
+    CMD_GET_NEWS,
     CMD_CALIBRATION,
     CMD_CLB_DATA,
     CMD_DISABLE_AUTO,
@@ -30,6 +32,7 @@ enum CMD_SET
 
 static const char* const CONSOLE_CMD[] = {
     "ver",
+    "news",
     "clb",
     "clbData",
     "disA",
@@ -46,6 +49,7 @@ void Console::printMenu()
 {
     printk("Commands: \n");
     printk("ver - version \n");
+    printk("news - obtain information about the latest changes\n");
     printk("clb - show calibrate data\n");
     printk("clbData - calibrate \n");
     printk("disA - disable autocalibrate \n");
@@ -54,7 +58,7 @@ void Console::printMenu()
     printk("tA - show autocalibrate period \n"); 
     printk("ADC - show ADCs cchanals data\n");
     printk("vRef= <SPACE><ref voltage in uVolt> - set reference voltage\n");
-    printk("vRef get reference voltage\n");
+    printk("vRef - get reference voltage\n");
     printk("-------------------------- \n"); 
 }
 
@@ -62,6 +66,12 @@ void Console::printVersion()
 {
     printk("BSP Hall Field Meter:\n");
     printk("Firmware version %d %s\n", FW_VERSION, FW_DATE);
+}
+
+void Console::printNews()
+{
+    printk("The Latest changes:\n");
+    printk("%s\n", LAST_EVENTS);
 }
 
 void Console::calibrate()
@@ -163,6 +173,8 @@ void Console::parser(unsigned int argc, char **argv)
     {
         case CMD_VERSION : printVersion();
             break;
+        case CMD_GET_NEWS : printNews();
+            break;    
         case CMD_CALIBRATION : calibrate();
             break;
         case CMD_CLB_DATA : printClbData();

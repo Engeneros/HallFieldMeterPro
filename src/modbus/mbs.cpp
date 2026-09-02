@@ -19,7 +19,7 @@
 #define MB_THREAD_STACK_SIZE 2048
 #define MB_THREAD_PRIORITY 4
 
-static struct k_mutex adc_data_mutex;
+//static struct k_mutex adc_data_mutex;
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
@@ -51,28 +51,47 @@ static int holding_reg_wr_cb(uint16_t addr, uint16_t reg)
 }
 
 //addr - uint32 - data[0] = input_reg[0]+input_reg[1], data[n] = input_reg[2n]+input_reg[2n+1],
+// void refresh_input_regs(int32_t* data, uint16_t start_addr, uint16_t stop_addr)
+// {
+//     k_mutex_lock(&adc_data_mutex, K_FOREVER); 
+//     memcpy(&input_regs[start_addr * 2], &data[0], (1+ stop_addr - start_addr) * 4);
+//     k_mutex_unlock(&adc_data_mutex);  
+// }
+
 void refresh_input_regs(int32_t* data, uint16_t start_addr, uint16_t stop_addr)
 {
-    k_mutex_lock(&adc_data_mutex, K_FOREVER); 
-    memcpy(&input_regs[start_addr * 2], &data[0], (1+ stop_addr - start_addr) * 4);
-    k_mutex_unlock(&adc_data_mutex);  
+    unsigned int key = irq_lock(); 
+    memcpy(&input_regs[start_addr * 2], &data[0], (1 + stop_addr - start_addr) * 4);
+    irq_unlock(key);  
 }
+
 
 void copy_input_regs(int32_t* data, uint16_t start_addr, uint16_t stop_addr)
 {
-    k_mutex_lock(&adc_data_mutex, K_FOREVER); 
+    //k_mutex_lock(&adc_data_mutex, K_FOREVER); 
+    unsigned int key = irq_lock(); 
     memcpy(&data[0], &input_regs[start_addr * 2], (1 + stop_addr - start_addr) * 4);
-    k_mutex_unlock(&adc_data_mutex);
+    irq_unlock(key);  
+    //k_mutex_unlock(&adc_data_mutex);
 }
 
+
+// static int input_reg_rd_cb(uint16_t addr, uint16_t *reg)
+// {
+//     if (addr >= MODBUS_IN_REGS_COUNT) { return -EINVAL; }
+//     k_mutex_lock(&adc_data_mutex, K_FOREVER);
+//     *reg = input_regs[addr];
+//     k_mutex_unlock(&adc_data_mutex);      
+// //    LOG_INF("Modbus inpReg Read: Reg[%d] = %d", addr, *reg);
+//     return 0;
+// }
 
 static int input_reg_rd_cb(uint16_t addr, uint16_t *reg)
 {
     if (addr >= MODBUS_IN_REGS_COUNT) { return -EINVAL; }
-    k_mutex_lock(&adc_data_mutex, K_FOREVER);
-    *reg = input_regs[addr];
-    k_mutex_unlock(&adc_data_mutex);      
-//    LOG_INF("Modbus inpReg Read: Reg[%d] = %d", addr, *reg);
+    unsigned int key = irq_lock();   
+    *reg = input_regs[addr];   
+    irq_unlock(key);      
     return 0;
 }
 
@@ -108,39 +127,40 @@ static int modbus_raw_tx_callback(int iface, const struct modbus_adu *adu, void 
     /* Отправляем сформированный сервером Modbus ответ обратно в TCP-сокет */
     int bytes_sent = send(active_client_fd, mtx_buf, tx_len, 0);
     if (bytes_sent < 0) {
-        LOG_ERR("Failed to send Modbus TCP response (errno %d)", errno);
+//        LOG_ERR("Failed to send Modbus TCP response (errno %d)", errno);
         return -EIO;
     }
     return 0;
 }
 
 void mb_thread_entry(void *arg1, void *arg2, void *arg3)
-{
+{//1
     LOG_INF("Starting Modbus TCP Application...");
     GPO* red = getRedLED();
-    struct modbus_iface_param param = {
+    struct modbus_iface_param param = {//1.1
         .mode = MODBUS_MODE_RAW, 
-        .server = { 
+        .server = { //1.1.2
             .user_cb = &mbs_cbs, 
             .unit_id = 1 
-        },
+        },//1.1.2
         /* Инициализируем объединение (union) через структуру rawcb */
-        .rawcb = {
+        .rawcb = {//1.1.13
             .raw_tx_cb = modbus_raw_tx_callback /* Перехватчик ответа сервера */
-        }
-    };
+        }//1.1.3
+    };//1.1
     int ctx_num = modbus_init_server(0, param);
     if (ctx_num < 0) 
-    {
-        LOG_ERR("Failed to init Modbus backend (err %d)", ctx_num);
+    {//1.2
+//        LOG_ERR("Failed to init Modbus backend (err %d)", ctx_num);
         return;
-    }
+    }//1.2
     /* === СОЗДАЕМ TCP СЕРВЕР НА ПОРТУ 502 === */
     int server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (server_fd < 0) {
-        LOG_ERR("Failed to create socket! (%d)", errno);
+    if (server_fd < 0)
+    {//1.3
+//        LOG_ERR("Failed to create socket! (%d)", errno);
         return;
-    }
+    }//1.3
 
     struct sockaddr_in bind_addr;// = {
     //     .sin_family = AF_INET,
@@ -149,46 +169,55 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
     // };            
     bind_addr.sin_family = AF_INET;
     bind_addr.sin_port = htons(502);
-    bind_addr.sin_addr.s_addr = INADDR_ANY; // Теперь это корректное C++ присвоение
+    bind_addr.sin_addr.s_addr = INADDR_ANY; 
 
-    if (bind(server_fd, (struct sockaddr *)&bind_addr, sizeof(bind_addr)) < 0) {
-        LOG_ERR("Bind failed! (%d)", errno);
+    if (bind(server_fd, (struct sockaddr *)&bind_addr, sizeof(bind_addr)) < 0) 
+    {//1.4
+//        LOG_ERR("Bind failed! (%d)", errno);
         close(server_fd);
         return;
-    }
-    if (listen(server_fd, 1) < 0)
-    {
-        LOG_ERR("Listen failed! (%d)", errno);
+    }//1.4
+    if (listen(server_fd, 4) < 0)
+    {//1.5
+//        LOG_ERR("Listen failed! (%d)", errno);
         close(server_fd);
         return;
-    }
-    LOG_INF("Modbus TCP Server listen port 502...");
+    }//1.5
+//    LOG_INF("Modbus TCP Server listen port 502...");
     while (1) 
-    {
+    {//1.6
         struct sockaddr_in client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
         
         int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-        if (client_fd < 0) {
-            k_sleep(K_MSEC(10));
+        if (client_fd < 0)
+        {//1.6.1
+            k_sleep(K_MSEC(1));
             continue;
-        }
+        }//1.6.1
         //LOG_INF("QModMaster has connected to socket");     
         /* Сохраняем дескриптор сокета, чтобы коллбек отправки знал, куда слать данные */
         active_client_fd = client_fd;
 
         while (1) 
-        {
+        {//1.6.2
             holding_regs[0]++; 
             int rc = recv(client_fd, mrx_buf, sizeof(mrx_buf), 0);
             if (rc <= 0)
-            {
+            {//1.6.2.1
                // LOG_INF("Master has disconnected");
-                break;               
-            }
+                               // ЛОГ 1: Фиксируем, ПОЧЕМУ мы вышли из цикла чтения
+                if (rc == 0) 
+                {
+                    LOG_INF("rc=0 ");
+                } else {
+                    LOG_ERR("ERROR: %d, errno: %d ", rc, errno);
+                }
+                break;              
+            }//1.6.2.1
             if (rc < 8) 
                 continue;
-            holding_regs[1]++; 
+//            holding_regs[1]++; 
             struct modbus_adu adu;            
             /* Разбираем входящий заголовок MBAP (первые 7 байт) */
             modbus_raw_get_header(&adu, mrx_buf);           
@@ -201,26 +230,37 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
             
             /* Копируем чистые данные PDU во внутренний массив структуры adu */
             if (adu.length <= sizeof(adu.data)) 
-            {
+            {//1.6.2.2
                 if (adu.length > 0)
-                {
+                {//1.6.2.2.1
                     memcpy(adu.data, &mrx_buf[8], adu.length);
                     holding_regs[2] += 2; 
-                }
-            } 
+                }//1.6.2.2.1
+            } //1.6.2.2
             else 
                 continue;
             /* ВЫЗОВ ИСПРАВЛЕН: Передаем СТРОГО 2 аргумента согласно сигнатуре Zephyr 3.7.1 */
             /* Функция вернет 0, выполнит holding_reg_rd_cb и автоматически вызовет modbus_raw_tx_callback */
             int err = modbus_raw_submit_rx(0, &adu);
-            if (err != 0) 
-                LOG_ERR("Error submitting raw ADU: %d", err);
-        }      
-        close(client_fd);
+//           if (err != 0) 
+//                LOG_ERR("Error submitting raw ADU: %d", err);
+        } //1.6.2     
+        int close_rc = close(client_fd);
+        if (close_rc == 0)
+        {
+            LOG_INF("close ok ");
+        }
+        else
+        {
+            LOG_ERR("close FAILED, errno: %d ", errno);
+        }
+
         active_client_fd = -1;
-    }   
+        k_msleep(10);
+        LOG_INF("goTo->accept ");
+    }//1.6   
     close(server_fd);
-}
+}//1
 
 K_THREAD_STACK_DEFINE(mb_thread_stack, MB_THREAD_STACK_SIZE);
 static struct k_thread mb_thread_data;

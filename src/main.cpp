@@ -2,7 +2,7 @@
 // #include <zephyr/device.h>
 // #include <zephyr/drivers/spi.h>
 //#include <zephyr/drivers/gpio.h>
- #include <zephyr/sys/printk.h>
+#include <zephyr/sys/printk.h>
 #include <zephyr/shell/shell.h>
 #include <zephyr/console/console.h>
 #include <stdio.h>
@@ -10,9 +10,9 @@
 // #include <zephyr/net/net_if.h>
 // #include <zephyr/net/socket.h>  /* Добавляем стандартные POSIX сокеты */
 // #include <zephyr/modbus/modbus.h>
-#include <zephyr/logging/log.h>
-#include <string.h>
-#include <stdint.h>
+//#include <zephyr/logging/log.h>
+//#include <string.h>
+//#include <stdint.h>
 
 // #include <zephyr/kernel.h>
 // #include <zephyr/drivers/eeprom.h>
@@ -46,7 +46,7 @@ extern "C"{
         return 0;
     }
 }
-// Регистрируем команду "process_str" в терминале
+// Регистрируем команду "pr" в терминале
 SHELL_CMD_REGISTER(pr, NULL, "Terminal String Process", cmd_my_test);
 
 /* Получаем указатель на устройство EEPROM из дерева устройств по его метке */
@@ -89,11 +89,12 @@ int main(void)
 
     if (adc_tid)
         printk("adc thread created.\n");
-    printk("v6-260825 : System started type 'pr <your_string>'in terminal.\n");
+
+    printk("v7-260902 System Work: System started type 'pr <your_string>'in terminal.\n");
     while (true)
     {
         yellow->toggle();
-        k_msleep(2000);
+        k_msleep(500);
     }
     return 0;
 }

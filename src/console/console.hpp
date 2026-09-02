@@ -22,6 +22,7 @@ private:
     void getAdcData();
     void setVRef(unsigned int argc, char **argv);
     void getVRef();
+    void printNews();
 
 
     AdcSequencer* adcSys;
