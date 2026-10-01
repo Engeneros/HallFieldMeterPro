@@ -1,8 +1,62 @@
 #pragma once
 #include <stdint.h>
+enum MB_HOLDING_REG_MAP
+{
+    HR_TIME_UTS_MSW1,
+    HR_TIME_UTS_MSW0,
+    HR_TIME_UTS_LSW1,
+    HR_TIME_UTS_LSW0,
+    HR_CONTROL,
+    HR_AUTO_CLB_TIME,
+    MODBUS_H_REGS_COUNT
+};
+
+enum MB_INPUT_REG_MAP
+{
+    IR_HALL_L_MSW,
+    IR_HALL_L_LSW,
+    IR_HALL_R_MSW,
+    IR_HALL_R_LSW,
+    IR_CURRENT_R_MSW,
+    IR_CURRENT_R_LSW,
+    IR_TEMPERATURE_MSW,
+    IR_TEMPERATURE_LSW,
+    IR_NULL,
+    IR_CLB_PLUS_MSW,
+    IR_CLB_MINUS_MSW,
+    IR_V_REF_NV,
+    IR_TIME_UTS_MSW1,
+    IR_TIME_UTS_MSW0,
+    IR_TIME_UTS_LSW1,
+    IR_TIME_UTS_LSW0,
+    IR_DEV_NUM,
+    IR_HW_VERSION,
+    IR_FW_VERSION,
+    IR_IFC_VERSION,
+    MODBUS_IN_REGS_COUNT
+};
+
+struct ctlHRbits
+{
+    uint16_t clbAutoEn : 1;
+    uint16_t startClb : 1;
+    uint16_t reservCtl : 14;
+};
+
+union ctlHR
+{
+    uint16_t word;
+    ctlHRbits bits;
+};
+
 void modbus_start();
 void refresh_input_regs(int32_t* data, uint16_t start_addr, uint16_t stop_addr);
 void copy_input_regs(int32_t* data, uint16_t start_addr, uint16_t stop_addr);
+void setControlHR(uint16_t val);
+uint32_t getControlHR();
+void clbTimeWr(uint16_t val);
+uint32_t clbTimeRd();
+
 
 //void mb_thread_entry(void *arg1, void *arg2, void *arg3);
 

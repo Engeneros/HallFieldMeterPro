@@ -26,7 +26,8 @@
 #include "console.hpp"
 #include "abstract_mem.hpp"
 
-//Функция, которая вызовется, когда пользователь введет команду в терминал
+//The function that will be called when
+// the user enters a command in the terminal
 extern "C"{
     static int cmd_my_test(const struct shell *sh, size_t argc, char **argv)
     {
@@ -37,7 +38,7 @@ extern "C"{
             return -EINVAL;
         }
         ctrl->parser(argc, argv);
-        // argv[1] — это и есть принятая из терминала строка (аргумент команды)
+        // argv[1] — command argument
  //       printk("Recieved string: %s", argv[1]);
  //       for( int i = 2; i < argc; ++i)
  //           printk(" %s ", argv[i]);
@@ -46,7 +47,7 @@ extern "C"{
         return 0;
     }
 }
-// Регистрируем команду "pr" в терминале
+//We register the “pr” command in the terminal.
 SHELL_CMD_REGISTER(pr, NULL, "Terminal String Process", cmd_my_test);
 
 /* Получаем указатель на устройство EEPROM из дерева устройств по его метке */
@@ -76,6 +77,11 @@ void adc_thread_entry(void *arg1, void *arg2, void *arg3)
 int main(void)
 {
     int ret;
+    //We’ll quickly copy the holding registers here
+    ctlHR  regHCtl;
+    uint16_t tmp, autoClbTime = 10;
+    regHCtl.word = 0;
+
     modbus_start();
     GPO* yellow = getYellowLED();
     k_tid_t adc_tid = k_thread_create(&adc_thread_data,
@@ -89,12 +95,22 @@ int main(void)
 
     if (adc_tid)
         printk("adc thread created.\n");
-
-    printk("v7-260902 System Work: System started type 'pr <your_string>'in terminal.\n");
+    printk("v9-261001 System Work: System started type 'pr <your_string>'in terminal.\n");
+    AdcSequencer* adSqr = getAdcSequencer();
     while (true)
-    {
+    {           
         yellow->toggle();
-        k_msleep(500);
+        k_msleep(100);
+        tmp =  clbTimeRd();
+        if(tmp != autoClbTime)
+        {
+            if(tmp > 9)
+            {
+                autoClbTime = tmp;
+                adSqr->autoClbSetT(tmp);
+            }
+        }
+        tmp = getControlHR();
     }
     return 0;
 }

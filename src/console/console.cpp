@@ -3,13 +3,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include "board_devs.hpp"
+#include "mbs.hpp"
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 7;
+static const uint16_t FW_VERSION = 9;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "2.09.26";
+static const char FW_DATE [] = "01.10.26";
 static const char IFC_DATE [] = "10.07.26";
 static const char LAST_EVENTS [] = "Modbas works and doesn’t crash";
 
@@ -80,6 +81,10 @@ void Console::calibrate()
     while(adcSys->isClbDone() == false)
     {        
     }
+    ctlHR temp;
+    temp.word = getControlHR();
+    temp.bits.startClb = 0;
+    setControlHR(temp.word);
     printClbData();
 }
 
@@ -97,11 +102,19 @@ void Console::printClbData()
 
 void Console::disAutoClb()
 {
+    ctlHR temp;
+    temp.word = getControlHR();
+    temp.bits.clbAutoEn = 0;
+    setControlHR(temp.word);
     adcSys->autoClbDisable();
 }
 
 void Console::enAutoClb()
 {
+    ctlHR temp;
+    temp.word = getControlHR();
+    temp.bits.clbAutoEn = 1;
+    setControlHR(temp.word);
     adcSys->autoClbEnable();
 }
 
@@ -110,8 +123,11 @@ void Console::setAutoClbTime(unsigned int argc, char **argv)
     if(argc == 3)
     {
         int seconds = atoi(argv[2]);
-        if (seconds > 9)
+        if ((seconds > 9) && (seconds < 0xfffe))
+        {
             adcSys->autoClbSetT(seconds);
+            clbTimeWr (static_cast<uint16_t>(seconds));
+        }
         else 
             printk ("OOPS: Bad time value. The minimum auto calibration period is 10 seconds.");
     }
