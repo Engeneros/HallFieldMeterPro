@@ -7,6 +7,7 @@
 #include <zephyr/console/console.h>
 #include <stdio.h>
 
+
 // #include <zephyr/net/net_if.h>
 // #include <zephyr/net/socket.h>  /* Добавляем стандартные POSIX сокеты */
 // #include <zephyr/modbus/modbus.h>
@@ -48,7 +49,7 @@ extern "C"{
     }
 }
 //We register the “pr” command in the terminal.
-SHELL_CMD_REGISTER(pr, NULL, "Terminal String Process", cmd_my_test);
+SHELL_CMD_REGISTER(_, NULL, "Terminal String Process", cmd_my_test);
 
 /* Получаем указатель на устройство EEPROM из дерева устройств по его метке */
 //const struct device *eeprom_dev = DEVICE_DT_GET(DT_NODELABEL(eeprom_at24));
@@ -79,8 +80,7 @@ int main(void)
     int ret;
     //We’ll quickly copy the holding registers here
     ctlHR  regHCtl;
-    uint16_t tmp, autoClbTime = 10;
-    regHCtl.word = 0;
+    uint16_t  autoClbT;
 
     modbus_start();
     GPO* yellow = getYellowLED();
@@ -95,22 +95,29 @@ int main(void)
 
     if (adc_tid)
         printk("adc thread created.\n");
-    printk("v9-261001 System Work: System started type 'pr <your_string>'in terminal.\n");
+    printk("v9v17--26A02 System Work: System started type '_ <your_string>'in terminal.\n");
+    k_msleep(100);
     AdcSequencer* adSqr = getAdcSequencer();
-    while (true)
+    while(true)
     {           
         yellow->toggle();
-        k_msleep(100);
-        tmp =  clbTimeRd();
-        if(tmp != autoClbTime)
+        k_msleep(500);
+        autoClbT =  clbTimeRd();
+        adSqr->autoClbSetT(autoClbT);
+        regHCtl.word = getControlHR();
+//        printk("ctlRg=%d -- ", regHCtl.word);
+        if(regHCtl.bits.startClb != 0)
         {
-            if(tmp > 9)
-            {
-                autoClbTime = tmp;
-                adSqr->autoClbSetT(tmp);
-            }
-        }
-        tmp = getControlHR();
+             adSqr->calibrateStart();
+             while(adSqr->isClbDone() == false)                             
+                 k_msleep(20);                  
+             regHCtl.word = getControlHR();//to get the correct value
+             regHCtl.bits.startClb = 0;
+             setControlHR(regHCtl.word);
+        }  
+        (regHCtl.bits.clbAutoEn == 0)? adSqr->autoClbDisable() : adSqr->autoClbEnable();
+        //printk("=%d \n", regHCtl.word);
+              
     }
     return 0;
 }

@@ -24,8 +24,8 @@
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 //#define MODBUS_H_REGS_COUNT 10
 //#define MODBUS_IN_REGS_COUNT 16
-static uint16_t holding_regs[MODBUS_H_REGS_COUNT] = {0, 11, 22, 33, 44, 55};//, 88, 99};
-static uint16_t input_regs[MODBUS_IN_REGS_COUNT] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+static uint16_t holding_regs[MODBUS_H_REGS_COUNT] = {0, 76, 12, 45, 0, 20};//, 88, 99};
+static uint16_t input_regs[MODBUS_IN_REGS_COUNT] = {0};//, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
 
 #define MODBUS_TCP_MAX_ADU_SIZE 260
 static uint8_t mrx_buf[MODBUS_TCP_MAX_ADU_SIZE];
@@ -45,7 +45,7 @@ uint32_t getControlHR()
     unsigned int key = irq_lock(); 
     retV = holding_regs[HR_CONTROL];
     irq_unlock(key);   
-    return retV;
+    return retV & (AUTOCLB_EN | START_CLB);
 }
 void clbTimeWr(uint16_t val)
 {
@@ -62,8 +62,6 @@ uint32_t clbTimeRd()
     return retV;  
 }
 
-
-
 /* 1. Коллбеки чтения/записи регистров */
 static int holding_reg_rd_cb(uint16_t addr, uint16_t *reg)
 {
@@ -77,8 +75,11 @@ static int holding_reg_rd_cb(uint16_t addr, uint16_t *reg)
 
 static int holding_reg_wr_cb(uint16_t addr, uint16_t reg)
 {
-    if (addr >= MODBUS_H_REGS_COUNT) { return -EINVAL; }
-    unsigned int key = irq_lock(); 
+    if (addr >= MODBUS_H_REGS_COUNT)
+        return -EINVAL;
+    if ((addr == HR_AUTO_CLB_TIME) && (reg  == 0))
+        return -EINVAL;
+    unsigned int key = irq_lock();
     holding_regs[addr] = reg;
     irq_unlock(key);  
 //    LOG_INF("Modbus Write: Reg[%d] -> %d", addr, reg);
@@ -254,7 +255,6 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
 
         while (1) 
         {//1.6.2
-            holding_regs[0]++; 
             int rc = recv(client_fd, mrx_buf, sizeof(mrx_buf), 0);
             if (rc <= 0)
             {//1.6.2.1
@@ -286,8 +286,7 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
             {//1.6.2.2
                 if (adu.length > 0)
                 {//1.6.2.2.1
-                    memcpy(adu.data, &mrx_buf[8], adu.length);
-                    holding_regs[2] += 2; 
+                    memcpy(adu.data, &mrx_buf[8], adu.length);                    
                 }//1.6.2.2.1
             } //1.6.2.2
             else 

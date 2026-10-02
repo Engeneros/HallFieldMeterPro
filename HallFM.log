@@ -21,4 +21,5 @@
               # 4. Включаем автоматический сброс при нехватке памяти (если стек поддерживает)
               CONFIG_NET_STATISTICS=y
 2609 V8 true big endian in input egister
-261001 V9 full mb befin			  
+261001 V9 full mb befin
+261002 V9 Holding reg RW			  

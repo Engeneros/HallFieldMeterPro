@@ -10,9 +10,9 @@ static const uint16_t HW_VERSION = 0;
 static const uint16_t FW_VERSION = 9;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "01.10.26";
+static const char FW_DATE [] = "02.10.26";
 static const char IFC_DATE [] = "10.07.26";
-static const char LAST_EVENTS [] = "Modbas works and doesn’t crash";
+static const char LAST_EVENTS [] = "Rd & Wr Holding Regs";
 
 enum CMD_SET
 {
@@ -38,7 +38,7 @@ static const char* const CONSOLE_CMD[] = {
     "clbData",
     "disA",
     "enA",
-    "ta=",
+    "tA=",
     "tA",
     "ADC",
     "vRef=",
@@ -51,13 +51,13 @@ void Console::printMenu()
     printk("Commands: \n");
     printk("ver - version \n");
     printk("news - obtain information about the latest changes\n");
-    printk("clb - show calibrate data\n");
-    printk("clbData - calibrate \n");
+    printk("clb - calibrate\n");
+    printk("clbData - show calibrate data \n");
     printk("disA - disable autocalibrate \n");
     printk("enAa - enable autocalibtate \n");
     printk("tA=<SPACE><time in seconds> - set autocalibrate period \n");
     printk("tA - show autocalibrate period \n"); 
-    printk("ADC - show ADCs cchanals data\n");
+    printk("ADC - show ADCs chanhels data\n");
     printk("vRef= <SPACE><ref voltage in uVolt> - set reference voltage\n");
     printk("vRef - get reference voltage\n");
     printk("-------------------------- \n"); 
@@ -78,9 +78,10 @@ void Console::printNews()
 void Console::calibrate()
 {
     adcSys->calibrateStart();
-    while(adcSys->isClbDone() == false)
-    {        
-    }
+    while(adcSys->isClbDone() == false)  
+    {
+        k_msleep(20);
+    }  
     ctlHR temp;
     temp.word = getControlHR();
     temp.bits.startClb = 0;
@@ -123,7 +124,7 @@ void Console::setAutoClbTime(unsigned int argc, char **argv)
     if(argc == 3)
     {
         int seconds = atoi(argv[2]);
-        if ((seconds > 9) && (seconds < 0xfffe))
+        if ((seconds > 0) && (seconds <= 0xffff))
         {
             adcSys->autoClbSetT(seconds);
             clbTimeWr (static_cast<uint16_t>(seconds));

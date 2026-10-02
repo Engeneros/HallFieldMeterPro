@@ -2,6 +2,7 @@
 //src/adc/adc_sequencer.hpp
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
+#include <atomic>
 #include "abstract_adc.hpp"
 #include "abstract_mem.hpp"
 
@@ -68,9 +69,10 @@ private:
    static const unsigned int SAMPLES_PER_ACQ = 8;
 
     int acqCycCnt;
-    volatile bool clbRequest {false};
-    volatile bool autoClbEn {false};
-    volatile unsigned int autoClbTsec {DEFAULT_AUTO_CLB_T};
+    bool clbRequest {false};
+    bool autoClbEn {false};
+    std::atomic<int> autoClbTsec {DEFAULT_AUTO_CLB_T};
+//    volatile unsigned int autoClbTsec {DEFAULT_AUTO_CLB_T};
     double uVperQuant[ACQ_CHAN_NUM];
     int32_t shift_inQ [ACQ_CHAN_NUM];
     int32_t chScaleFactor [ACQ_CHAN_NUM];
