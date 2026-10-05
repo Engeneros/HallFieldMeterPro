@@ -5,6 +5,8 @@
 #include <atomic>
 #include "abstract_adc.hpp"
 #include "abstract_mem.hpp"
+#include "UniTime.hpp"
+
 
 
 enum ACQ_CHAN
@@ -48,10 +50,12 @@ private:
    void threadLoop();
    void acq();
    void clbProc();
- 
+    
+   UniTime* tm;
    const struct gpio_dt_spec* adDataRdy;
    AbstractADC* chanSet[ACQ_CHAN_NUM];
    int32_t acqData[ACQ_CHAN_NUM];
+   std::atomic<int64_t> sampleTime; 
   
    struct k_mutex adc_rd;
    struct k_thread threadData;

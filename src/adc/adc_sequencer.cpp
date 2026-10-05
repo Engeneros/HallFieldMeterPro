@@ -3,6 +3,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/printk.h>
 #include "board_devs.hpp"
+
 static struct k_mutex adc_rd;
 
 
@@ -26,6 +27,7 @@ isCalibrateDone(true), isRunning (false)
   //  gpio_pin_configure_dt(&ctrl->adDtRdy, GPIO_INPUT);
   //  gpio_pin_interrupt_configure_dt(&ctrl->adDtRdy, GPIO_INT_EDGE_TO_ACTIVE);
     isRunning = false; // Обязательно инициализируем!
+    tm = getBrdTime();
     k_mutex_init(&adc_rd); 
     for (int chan = 0; chan < ACQ_CHAN_NUM; ++chan)
     {
@@ -97,15 +99,12 @@ void AdcSequencer::start()
     isRunning = true;
 }
 
-// Исправлено: Оставляем extern "C" на уровне реализации
 extern "C" void AdcSequencer::drdyGpioCallbackThunk(const struct device *port, 
                                                     struct gpio_callback *cb, 
                                                     uint32_t pins) 
-{
-    // Извлекаем наш C++ объект секвенсора из структуры коллбэка
+{   
     AdcSequencer* instance = CONTAINER_OF(cb, AdcSequencer, drdyCbData);
     
-    // Безопасно отдаем семафор в контексте прерывания (ISR)
     k_sem_give(&instance->drdySem);
 } 
 
@@ -120,9 +119,10 @@ void AdcSequencer::calibrateStart()
     isCalibrateDone = false;
     clbRequest = true;
 }
+
+
 void AdcSequencer::acq()
 {
-//    double tempVal;
     int32_t summ;
     int err;
     int count;
@@ -136,9 +136,9 @@ void AdcSequencer::acq()
             currChan->start();   
             for(int i = 0; i < TRASH_SAMPLE_NUM; ++i)
             {
-                // 2. Секвенсор засыпает на СВОЕМ семафоре и ждет физический спад от PB15
+                // sequencer goo to sleep and wait negative front from PB15
                 err = k_sem_take(&drdySem, K_MSEC(200));
-                // ПЕРЕД чтением по SPI временно удаляем наш коллбэк из обработки
+                // We remove the callback to avoid processing interrupts from the MISO SPI fronts 
                 gpio_remove_callback(adDataRdy->port, &drdyCbData);
                 if (err == 0)              // 3. Сигнал DRDY прилетел! Говорим каналу вычитать данные по SPI
                     summ = currChan->getQuants();
@@ -149,20 +149,22 @@ void AdcSequencer::acq()
             summ = 0;
             for(int i = 0; i < SAMPLES_PER_ACQ; ++i)
             {
-                // 2. Секвенсор засыпает на СВОЕМ семафоре и ждет физический спад от PB15
+                // sequencer goo to sleep and wait negative front from PB15
                 err = k_sem_take(&drdySem, K_MSEC(200));
-                // ПЕРЕД чтением по SPI временно удаляем наш коллбэк из обработки
+                 // We remove the callback to avoid processing interrupts from the MISO SPI fronts 
                 gpio_remove_callback(adDataRdy->port, &drdyCbData);
                 if (err == 0)
-                {              // 3. Сигнал DRDY прилетел! Говорим каналу вычитать данные по SPI
+                {              // DRDY! SPI read
                     summ += currChan->getQuants();// - shift_inQ[ch];
                     ++count;
-                }
-                cnvNum[ch] = count;
-                cnvSumm[ch] = summ;
+                }                
                 k_sem_reset(&drdySem);    
                 gpio_add_callback(adDataRdy->port, &drdyCbData);
             }
+            sampleTime = tm->getTime();
+            cnvNum[ch] = count;
+            cnvSumm[ch] = summ;
+            
             // k_mutex_lock(&adc_rd, K_FOREVER); 
             // if(count > 0)
             // {

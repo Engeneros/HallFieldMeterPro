@@ -18,7 +18,7 @@ target_sources(app PRIVATE
     src/leds/gpo.cpp
     src/adc/ads1234.cpp
     src/adc/adc_sequencer.cpp
-    src/time/time.cpp
+    src/time/uniTime.cpp
     src/modbus/mbs.cpp
     src/console/console.cpp
     src/mem/mem.cpp

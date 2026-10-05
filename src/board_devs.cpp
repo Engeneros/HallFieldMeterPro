@@ -195,3 +195,10 @@ AbstractMem* getBrdEEprom()
     static Mem ee = Mem(eeprom_dev);
     return static_cast<AbstractMem*>(&ee);
 }
+
+#include "uniTime.hpp"
+UniTime* getBrdTime()
+{
+    static UniTime bTm = UniTime();
+    return &bTm;
+}

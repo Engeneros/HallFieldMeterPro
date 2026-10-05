@@ -26,6 +26,7 @@
 #include "mbs.hpp"
 #include "console.hpp"
 #include "abstract_mem.hpp"
+#include "uniTime.hpp"
 
 //The function that will be called when
 // the user enters a command in the terminal
