@@ -18,7 +18,7 @@ static const double MAX_REF_V = 600000;//uV
     class AbstractADC;
     class AdcSequencer;
     class Console;
-    class UniTime;
+
     AbstractADC* getFieldMeterL();
     AbstractADC* getFieldMeterR();
     AbstractADC* getCurrentMeter();
@@ -33,6 +33,7 @@ static const double MAX_REF_V = 600000;//uV
     AbstractADC* getRefMinusMeter();
     class AbstractMem;
     AbstractMem* getBrdEEprom();
+    class UniTime;
     UniTime* getBrdTime();
 #endif
 

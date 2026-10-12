@@ -14,6 +14,7 @@
 #include "board_devs.hpp"
 #include "mbs.hpp"
 #include "adc_sequencer.hpp"
+#include "uni_time.hpp"
 
 //#include "mbs.hpp"
 #define MB_THREAD_STACK_SIZE 2048
@@ -72,16 +73,51 @@ static int holding_reg_rd_cb(uint16_t addr, uint16_t *reg)
     //LOG_INF("Modbus Read: Reg[%d] = %d", addr, *reg);
     return 0;
 }
+#pragma pack(push, 1)
+struct timeWords
+{
+    uint8_t msw1 : 1;
+    uint8_t msw0 : 1;
+    uint8_t lsw1 : 1;
+    uint8_t lsw0 : 1;
+    uint8_t reserv : 4;
+};
+#pragma pack(pop)
+
+union tmWBB
+{
+    uint8_t byte;
+    timeWords b;    
+};
+
+static tmWBB rcvTime = {0};
 
 static int holding_reg_wr_cb(uint16_t addr, uint16_t reg)
 {
+    // static bool timeRefresh = false;
+    // static bool tRegRcvd [4] = {false};
+
     if (addr >= MODBUS_H_REGS_COUNT)
         return -EINVAL;
     if ((addr == HR_AUTO_CLB_TIME) && (reg  == 0))
         return -EINVAL;
+    if(addr == HR_TIME_UTS_MSW1)
+       rcvTime.b.msw1 = 1;
+    else if (addr == HR_TIME_UTS_MSW0)
+         rcvTime.b.msw0 = 1;             
+    else if (addr == HR_TIME_UTS_LSW1)
+       rcvTime.b.lsw1 = 1; 
+    else if (addr == HR_TIME_UTS_LSW0)
+       rcvTime.b.lsw0 = 1;
     unsigned int key = irq_lock();
     holding_regs[addr] = reg;
-    irq_unlock(key);  
+    irq_unlock(key); 
+    if(rcvTime.byte == 0xf)
+    {
+        UniTime* tm = getBrdTime();
+        tm->refreshTime(static_cast<uint16_t*>(&holding_regs[HR_TIME_UTS_MSW1]));
+        rcvTime.byte = 0;
+    } 
 //    LOG_INF("Modbus Write: Reg[%d] -> %d", addr, reg);
     return 0;
 }
@@ -94,6 +130,10 @@ static int holding_reg_wr_cb(uint16_t addr, uint16_t reg)
 //     k_mutex_unlock(&adc_data_mutex);  
 // }
 
+void timeRefreshed()
+{
+    rcvTime.byte = 0;
+}
 void refresh_input_regs(int32_t* data, uint16_t start_addr, uint16_t stop_addr)
 {
     unsigned int key = irq_lock(); 

@@ -26,7 +26,7 @@
 #include "mbs.hpp"
 #include "console.hpp"
 #include "abstract_mem.hpp"
-#include "uniTime.hpp"
+#include "uni_time.hpp"
 
 //The function that will be called when
 // the user enters a command in the terminal
@@ -58,19 +58,31 @@ SHELL_CMD_REGISTER(_, NULL, "Terminal String Process", cmd_my_test);
 #define ADC_THREAD_PRIORITY 9
 struct k_thread adc_thread_data;
 K_KERNEL_STACK_MEMBER(adc_thread_stack, 2048); 
+union timeToInt
+{
+    int64_t time;
+    int32_t dw[2];
+};
 
+static const unsigned int TIME_SIZE = sizeof(timeToInt)/sizeof(int32_t);
 void adc_thread_entry(void *arg1, void *arg2, void *arg3)
 {
     AdcSequencer* sqr = getAdcSequencer();
     GPO* grn = getGreenLED();
     sqr->start();
     k_msleep(1200);
-    int32_t adData[ACQ_CHAN_NUM];
+//    adData size is number of ADC chanal + size of time in doubleWords  
+    int32_t adData[TEMPERATURE + 1 + TIME_SIZE];
+    timeToInt sTime;
+ 
     while(1) 
     {
         grn->toggle();
+        sTime.time = sqr->getDataT(adData, HALL_SENS_L, TEMPERATURE);
         sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
-        refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE);
+        adData[TEMPERATURE + 1] = sTime.dw[1];
+        adData[TEMPERATURE + 2] = sTime.dw[0];
+        refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE + TIME_SIZE);
         k_msleep(600);
     }
 

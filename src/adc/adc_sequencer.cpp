@@ -5,6 +5,7 @@
 #include "board_devs.hpp"
 
 static struct k_mutex adc_rd;
+struct k_spinlock AdcSequencer::adc_lock;
 
 
 
@@ -29,10 +30,11 @@ isCalibrateDone(true), isRunning (false)
     isRunning = false; // Обязательно инициализируем!
     tm = getBrdTime();
     k_mutex_init(&adc_rd); 
+    sampleTime = tm->getTime();
     for (int chan = 0; chan < ACQ_CHAN_NUM; ++chan)
     {
         chanSet[chan] = nullptr;
-        acqData[chan] = 123.456f;
+//        acqData[chan] = 123.456f;
     }
     eeMem  = getBrdEEprom();
     double temp;
@@ -42,6 +44,7 @@ isCalibrateDone(true), isRunning (false)
     else        
         vReference = 400000.0;
 }
+
 bool AdcSequencer::isClbDone()
 {
     return isCalibrateDone;
@@ -161,7 +164,6 @@ void AdcSequencer::acq()
                 k_sem_reset(&drdySem);    
                 gpio_add_callback(adDataRdy->port, &drdyCbData);
             }
-            sampleTime = tm->getTime();
             cnvNum[ch] = count;
             cnvSumm[ch] = summ;
             
@@ -177,7 +179,7 @@ void AdcSequencer::acq()
             // //     printk("OOPS!!: no valid samples\n"); 
             // k_mutex_unlock(&adc_rd);                
         }
-        k_msleep(5);
+//        k_msleep(5);
     }
 }
 
@@ -194,6 +196,7 @@ void AdcSequencer::clbProc()
     int32_t summ;
     int err;
     int count;
+    int32_t acqData[ACQ_CHAN_NUM - CLB_NULL];
     for (int ch = CLB_NULL; ch < ACQ_CHAN_NUM; ++ch)
     {
         AbstractADC* currChan = chanSet[ch];
@@ -229,21 +232,21 @@ void AdcSequencer::clbProc()
             }
             if(count > 0)
             {
-                acqData[ch] = summ/count;
+                acqData[ch - CLB_NULL] = summ/count;
 //                printk("ch%d=%d - %d; c=%d", ch, acqData[ch], tempVal, count);
             }
             else 
-                printk("OOPS!!: no valid samples, ch %\n", ch); 
+                printk("OOPS!!: no valid samples, ch %d\n", ch); 
         }
     }
     for (int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
     {
-        shift_inQ[ch] = acqData[CLB_NULL]/chScaleFactor[ch];//
+        shift_inQ[ch] = acqData[0]/chScaleFactor[ch];//
         //vReference = 500000uV - voltage from mux calibration chanel
-        uVperQuant[ch] =  vReference * 2.0 * static_cast<double>(chScaleFactor[ch])/ static_cast<double>(acqData[CLB_PLUS] - acqData[CLB_MINUS]);
+        uVperQuant[ch] =  vReference * 2.0 * static_cast<double>(chScaleFactor[ch])/ static_cast<double>(acqData[CLB_PLUS - CLB_NULL] - acqData[CLB_MINUS - CLB_NULL]);
     }
-    printk(" zero shift is %d\n", acqData[CLB_NULL]);
-    printk("%d quants per 1V\n", acqData[CLB_PLUS] - acqData[CLB_MINUS]);
+    printk(" zero shift is %d\n", acqData[0]);
+    printk("%d quants per 1V\n", acqData[CLB_PLUS - CLB_NULL] - acqData[CLB_MINUS - CLB_NULL]);
     isCalibrateDone = true;
 }
 
@@ -257,6 +260,7 @@ void AdcSequencer::threadLoop()
         for (acqCycCnt = (autoClbTsec * 100)/SAMPLES_PER_CYCLE; acqCycCnt > 0; --acqCycCnt) 
         {
             acq();
+            sampleTime = tm->getTime();
             if (clbRequest)
             {
                 clbRequest = false;
@@ -266,34 +270,88 @@ void AdcSequencer::threadLoop()
         }               
         if(autoClbEn && !clbRequest)            
             clbProc();
+        k_msleep(20);            
     }
  }
 
 void AdcSequencer::getData  (int32_t* dataOut, unsigned char startCh, unsigned char endCh)
 {
-    double tempVal; 
-       
+    k_spinlock_key_t key;
+    int summ, nums;
+    double tmSumm, tmN;
+ //   double tempVal; 
+ //   double tempCnt;
     for (int ch = startCh; ch <= endCh; ++ch)
     {
         if(cnvNum[ch] > 0)
         {
-            k_mutex_lock(&adc_rd, K_FOREVER);
-            tempVal = uVperQuant[ch]*(static_cast<double>(cnvSumm[ch])/static_cast<double>(cnvNum[ch]));
-            k_mutex_unlock(&adc_rd); 
-            tempVal -= static_cast<double>(sensorShift[ch]);
-            tempVal *= sensorScale[ch];
-            k_mutex_lock(&adc_rd, K_FOREVER);
-            acqData[ch] = static_cast<int32_t>(tempVal);
-            k_mutex_unlock(&adc_rd);
+            key = k_spin_lock(&adc_lock);
+            summ = cnvSumm[ch];
+            nums = cnvNum[ch];
+            k_spin_unlock(&adc_lock, key);
+            tmSumm = static_cast<double>(summ);
+            tmN = static_cast<double>(nums);
+
+            tmSumm *= uVperQuant[ch];//*(static_cast<double>(cnvSumm[ch])/static_cast<double>(cnvNum[ch]));
+            tmSumm /= tmN;
+            tmSumm -= static_cast<double>(sensorShift[ch]);
+            tmSumm *= sensorScale[ch];
+            dataOut[ch] = static_cast<int32_t>(tmSumm);
+//            summ = static_cast<int32_t>(tmSumm);
+ //           key = k_spin_lock(&adc_lock);
+ //           acqData[ch] = summ;
+ //           k_spin_unlock(&adc_lock, key);
         }
-        dataOut[ch] = acqData[ch];
+//        dataOut[ch] = acqData[ch];
     }
+
+/////////       
+
+ // = k_spin_lock(&adc_lock);
+ //   mSec64 = currentTime;
+ //   k_spin_unlock(&adc_lock, key);
+
+//////////////
+    // for (int ch = startCh; ch <= endCh; ++ch)
+    // {
+    //     if(cnvNum[ch] > 0)
+    //     {
+    //         key = k_spin_lock(&adc_lock);
+    //         tempVal = (static_cast<double>(cnvSumm[ch]);
+    //         trmpCnt = static_cast<double>(cnvNum[ch]);
+    //         k_mutex_lock(&adc_rd, K_FOREVER);
+    //         tempVal = uVperQuant[ch]*(static_cast<double>(cnvSumm[ch])/static_cast<double>(cnvNum[ch]));
+    //         k_mutex_unlock(&adc_rd); 
+    //         tempVal -= static_cast<double>(sensorShift[ch]);
+    //         tempVal *= sensorScale[ch];
+    //         k_mutex_lock(&adc_rd, K_FOREVER);
+    //         acqData[ch] = static_cast<int32_t>(tempVal);
+    //         k_mutex_unlock(&adc_rd);
+    //     }
+    //     dataOut[ch] = acqData[ch];
+    // }
 }
 
-void AdcSequencer::getData  (int32_t* dataOut) 
+void AdcSequencer::getAllData  (int32_t* dataOut) 
 {
    getData(dataOut, 0, ACQ_CHAN_NUM - 1); 
 }
+
+int64_t AdcSequencer::getDataT  (int32_t* dataOut, unsigned char startCh, unsigned char endCh)
+{
+    k_spinlock_key_t key;
+    int64_t ret;
+    getData (dataOut, startCh, endCh);
+    key = k_spin_lock(&adc_lock);
+    ret = sampleTime;
+    k_spin_unlock(&adc_lock, key);
+    return ret;
+}
+
+// int64_t AdcSequencer::getAllDataT  (int32_t* dataOut) 
+// {
+//    return getDataT(dataOut, 0, ACQ_CHAN_NUM - 1); 
+// }
 
 
 

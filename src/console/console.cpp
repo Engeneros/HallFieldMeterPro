@@ -7,12 +7,12 @@
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 9;
+static const uint16_t FW_VERSION = 10;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "02.10.26";
+static const char FW_DATE [] = "12.10.26";
 static const char IFC_DATE [] = "10.07.26";
-static const char LAST_EVENTS [] = "Rd & Wr Holding Regs";
+static const char LAST_EVENTS [] = "ADC time synchronization";
 
 enum CMD_SET
 {
@@ -93,7 +93,7 @@ void Console::printClbData()
 {
     int32_t adDt[ACQ_CHAN_NUM];
     double uVpq[CLB_NULL];
-    adcSys->getData(adDt);
+    adcSys->getAllData(adDt);
     adcSys->getClbData(uVpq);
     for(uint8_t ch = CLB_NULL; ch < ACQ_CHAN_NUM; ++ch)
         printk("CLB[%d]=%dq \n", ch, adDt[ch]);
@@ -143,8 +143,8 @@ void Console::getAutoClbTime()
 
 void Console::getAdcData()
 {
-    int32_t adDt[ACQ_CHAN_NUM];
-    adcSys->getData(adDt);
+    int32_t adDt[TEMPERATURE + 1];
+    adcSys->getData(adDt, HALL_SENS_L, TEMPERATURE);
     for (uint8_t ch = HALL_SENS_L; ch < HALL_CURRENT; ++ch )
         printk("UHall[%d]=%fmV\n", ch, static_cast <double>(adDt[ch]) / 1000.0);
     printk("Hall Current=%fmA\n", static_cast <double>(adDt[HALL_CURRENT]) / 1000000.0);

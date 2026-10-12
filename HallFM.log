@@ -22,4 +22,5 @@
               CONFIG_NET_STATISTICS=y
 2609 V8 true big endian in input egister
 261001 V9 full mb befin
-261002 V9 Holding reg RW			  
+261002 V9 Holding reg RW
+262012 V10 The time associated with the last ADC sample can be read via Modbus. The time can be synchronized via Modbus. 			  

@@ -20,15 +20,16 @@ enum MB_INPUT_REG_MAP
     IR_CURRENT_R_LSW,
     IR_TEMPERATURE_MSW,
     IR_TEMPERATURE_LSW,
+    IR_TIME_UTS_MSW1,
+    IR_TIME_UTS_MSW0,
+    IR_TIME_UTS_LSW1,
+    IR_TIME_UTS_LSW0,
     IR_NULL,
     IR_CLB_PLUS_MSW,
     IR_CLB_MINUS_MSW,
     IR_V_REF_NV,
  //   MODBUS_IN_REGS_COUNT,
-    IR_TIME_UTS_MSW1,
-    IR_TIME_UTS_MSW0,
-    IR_TIME_UTS_LSW1,
-    IR_TIME_UTS_LSW0,
+ 
     IR_DEV_NUM,
     IR_HW_VERSION,
     IR_FW_VERSION,
@@ -41,13 +42,18 @@ enum CONTROL_REG_BITS
     AUTOCLB_EN = 1,
     START_CLB = 2
 };
-
+#pragma pack(push, 1)
 struct ctlHRbits
 {
     uint16_t clbAutoEn : 1;
     uint16_t startClb : 1;
-    uint16_t reservCtl : 14;
+    uint16_t HAL_L_CH_ON : 1;
+    uint16_t HAL_R_CH_ON : 1;
+    uint16_t HALL_CURR_CH_ON : 1;
+    uint16_t TEMPERATURE_CH_ON : 1;
+    uint16_t reservCtl : 12;
 };
+#pragma pack(pop)
 
 union ctlHR
 {
@@ -62,6 +68,7 @@ void setControlHR(uint16_t val);
 uint32_t getControlHR();
 void clbTimeWr(uint16_t val);
 uint32_t clbTimeRd();
+void timeRefreshed();
 
 
 //void mb_thread_entry(void *arg1, void *arg2, void *arg3);

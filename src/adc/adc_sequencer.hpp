@@ -5,7 +5,7 @@
 #include <atomic>
 #include "abstract_adc.hpp"
 #include "abstract_mem.hpp"
-#include "UniTime.hpp"
+#include "uni_time.hpp"
 
 
 
@@ -33,13 +33,14 @@ public:
 // the calibration adjustments for the channel must be multiplied.   
     void addChan(AbstractADC* chan, unsigned char chNum, uint32_t scale, int32_t sensSh, double sensX);
     void start();
-    void getData(int32_t* dataOut);
+    void getAllData(int32_t* dataOut);
     void getData(int32_t* dataOut, unsigned char startCh, unsigned char endCh);
+    //int64_t getAllDataT(int32_t* dataOut);
+    int64_t getDataT(int32_t* dataOut, unsigned char startCh, unsigned char endCh);
     void getClbData(double* uVPerQ);
     double getVRef();
     void   setVRef(double uV);
 
- 
     void calibrateStart();
     bool isClbDone();
     void autoClbEnable();
@@ -49,17 +50,18 @@ public:
 private:
    void threadLoop();
    void acq();
-   void clbProc();
-    
+   void clbProc();    
    UniTime* tm;
    const struct gpio_dt_spec* adDataRdy;
    AbstractADC* chanSet[ACQ_CHAN_NUM];
-   int32_t acqData[ACQ_CHAN_NUM];
-   std::atomic<int64_t> sampleTime; 
+//   int32_t acqData[ACQ_CHAN_NUM];
+   int64_t sampleTime; 
   
    struct k_mutex adc_rd;
+   static struct k_spinlock adc_lock;
    struct k_thread threadData;
    K_KERNEL_STACK_MEMBER(threadStack, 2048); 
+   bool isCalibrateDone;
    bool isRunning;
  
    // Переносим структуры прерывания СЮДА. Они будут созданы в единственном экземпляре!
@@ -86,7 +88,8 @@ private:
     double sensorScale[ACQ_CHAN_NUM];
     //vReference = 500000uV - voltage from mux calibration chanel
     double vReference;
-    bool isCalibrateDone;
+
+
     AbstractMem* eeMem;
 };
 

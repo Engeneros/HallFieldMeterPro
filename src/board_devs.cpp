@@ -196,9 +196,9 @@ AbstractMem* getBrdEEprom()
     return static_cast<AbstractMem*>(&ee);
 }
 
-#include "uniTime.hpp"
+#include "uni_time.hpp"
 UniTime* getBrdTime()
 {
-    static UniTime bTm = UniTime();
+    static UniTime bTm = UniTime(0xEFDCBA9876540000);
     return &bTm;
 }
