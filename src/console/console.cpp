@@ -10,9 +10,9 @@ static const uint16_t HW_VERSION = 0;
 static const uint16_t FW_VERSION = 10;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "12.10.26";
-static const char IFC_DATE [] = "10.07.26";
-static const char LAST_EVENTS [] = "ADC time synchronization";
+static const char FW_DATE [] = "14.10.26";
+static const char IFC_DATE [] = "11.07.26";
+static const char LAST_EVENTS [] = "DHCP";
 
 enum CMD_SET
 {
@@ -84,7 +84,7 @@ void Console::calibrate()
     }  
     ctlHR temp;
     temp.word = getControlHR();
-    temp.bits.startClb = 0;
+    temp.b.startClb = 0;
     setControlHR(temp.word);
     printClbData();
 }
@@ -104,19 +104,19 @@ void Console::printClbData()
 void Console::disAutoClb()
 {
     ctlHR temp;
-    temp.word = getControlHR();
-    temp.bits.clbAutoEn = 0;
-    setControlHR(temp.word);
+  //  temp.word = getControlHR();//==uncomment for autoclb
+ //   temp.b.clbAutoEn = 0; 
+  //  setControlHR(temp.word);
     adcSys->autoClbDisable();
 }
 
 void Console::enAutoClb()
 {
     ctlHR temp;
-    temp.word = getControlHR();
-    temp.bits.clbAutoEn = 1;
-    setControlHR(temp.word);
-    adcSys->autoClbEnable();
+    // temp.word = getControlHR();//==uncomment for autoclb
+    // temp.b.clbAutoEn = 1;
+    // setControlHR(temp.word);
+     adcSys->autoClbEnable();
 }
 
 void Console::setAutoClbTime(unsigned int argc, char **argv)

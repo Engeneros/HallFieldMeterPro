@@ -96,7 +96,11 @@ int main(void)
     uint16_t  autoClbT;
 
     modbus_start();
+    while(isListen() == false)
+        k_msleep(20);
+
     GPO* yellow = getYellowLED();
+    k_msleep(100);
     k_tid_t adc_tid = k_thread_create(&adc_thread_data,
                                           adc_thread_stack,
                                           K_THREAD_STACK_SIZEOF(adc_thread_stack),
@@ -108,29 +112,29 @@ int main(void)
 
     if (adc_tid)
         printk("adc thread created.\n");
-    printk("v9v17--26A02 System Work: System started type '_ <your_string>'in terminal.\n");
+    printk("--26A14-0  System started. type '_ <your_string>'in terminal.\n");
     k_msleep(100);
     AdcSequencer* adSqr = getAdcSequencer();
     while(true)
     {           
         yellow->toggle();
         k_msleep(500);
-        autoClbT =  clbTimeRd();
-        adSqr->autoClbSetT(autoClbT);
+        // autoClbT =  clbTimeRd(); //==uncomment for autoclb
+        // adSqr->autoClbSetT(autoClbT);
         regHCtl.word = getControlHR();
 //        printk("ctlRg=%d -- ", regHCtl.word);
-        if(regHCtl.bits.startClb != 0)
+        if(regHCtl.b.startClb != 0)
         {
              adSqr->calibrateStart();
              while(adSqr->isClbDone() == false)                             
                  k_msleep(20);                  
              regHCtl.word = getControlHR();//to get the correct value
-             regHCtl.bits.startClb = 0;
+             regHCtl.b.startClb = 0;
              setControlHR(regHCtl.word);
         }  
-        (regHCtl.bits.clbAutoEn == 0)? adSqr->autoClbDisable() : adSqr->autoClbEnable();
+//        (regHCtl.b.clbAutoEn == 0)? adSqr->autoClbDisable() : adSqr->autoClbEnable(); //==uncomment for autoclb
         //printk("=%d \n", regHCtl.word);
-              
+             
     }
     return 0;
 }

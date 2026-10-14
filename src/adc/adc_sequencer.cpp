@@ -3,6 +3,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/printk.h>
 #include "board_devs.hpp"
+#include "mbs.hpp"
 
 static struct k_mutex adc_rd;
 struct k_spinlock AdcSequencer::adc_lock;
@@ -247,6 +248,7 @@ void AdcSequencer::clbProc()
     }
     printk(" zero shift is %d\n", acqData[0]);
     printk("%d quants per 1V\n", acqData[CLB_PLUS - CLB_NULL] - acqData[CLB_MINUS - CLB_NULL]);
+    setStatRgClbBit();
     isCalibrateDone = true;
 }
 

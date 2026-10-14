@@ -7,58 +7,96 @@ enum MB_HOLDING_REG_MAP
     HR_TIME_UTS_LSW1,
     HR_TIME_UTS_LSW0,
     HR_CONTROL,
-    HR_AUTO_CLB_TIME,
+//    HR_AUTO_CLB_TIME,
     MODBUS_H_REGS_COUNT
 };
 enum MB_INPUT_REG_MAP
 {
-    IR_HALL_L_MSW,
-    IR_HALL_L_LSW,
-    IR_HALL_R_MSW,
-    IR_HALL_R_LSW,
-    IR_CURRENT_R_MSW,
-    IR_CURRENT_R_LSW,
-    IR_TEMPERATURE_MSW,
-    IR_TEMPERATURE_LSW,
-    IR_TIME_UTS_MSW1,
-    IR_TIME_UTS_MSW0,
-    IR_TIME_UTS_LSW1,
-    IR_TIME_UTS_LSW0,
-    IR_NULL,
-    IR_CLB_PLUS_MSW,
-    IR_CLB_MINUS_MSW,
-    IR_V_REF_NV,
- //   MODBUS_IN_REGS_COUNT,
- 
-    IR_DEV_NUM,
-    IR_HW_VERSION,
-    IR_FW_VERSION,
-    IR_IFC_VERSION,
+    IR_HALL_L_MSW,//1
+    IR_HALL_L_LSW,//2
+    IR_HALL_R_MSW,//3
+    IR_HALL_R_LSW,//4
+    IR_CURRENT_R_MSW,//5
+    IR_CURRENT_R_LSW,//6
+    IR_TEMPERATURE_MSW,//7
+    IR_TEMPERATURE_LSW,//8
+    IR_TIME_UTS_MSW1,//9
+    IR_TIME_UTS_MSW0,//10
+    IR_TIME_UTS_LSW1,//11
+    IR_TIME_UTS_LSW0,//12
+    IR_STATUS,//13
+    IR_NULL,//14
+    IR_CLB_PLUS_MSW,//15
+    IR_CLB_PLUS_LSW,//16
+    IR_CLB_MINUS_MSW,//17
+    IR_CLB_MINUS_LSW,//18
+    IR_V_REF_NV_MSW,//19
+    IR_V_REF_NV_LSW,//20
+ //   MODBUS_IN_REGS_COUNT,    
+    IR_BRD_INFO,//21
+    IR_PROBE_INFO,//22
+    IR_FW_VERSION,//23
+    IR_IFC_VERSION,//24
     MODBUS_IN_REGS_COUNT
+};
+enum STATUS_REG_BITS
+{
+    HALL_L_ADC_ON,
+    HALL_R_ADC_ON,
+    CURRENT_ADC_ON,
+    T_ADC_ON,
+    HALL_CURRENT_ON,
+    CALIBRATE_DONE,
+    READY,
+    PROBE_ERR
+};
+#pragma pack (push, 1)
+struct statInpRbits
+{
+    uint16_t hallLadcOn : 1;//0
+    uint16_t hallRadcOn : 1;//1
+    uint16_t hCurradcOn : 1;//2
+    uint16_t tadcOn : 1;//3
+    uint16_t currentOn : 1;//4
+    uint16_t clbrDOne : 1;//5
+    uint16_t ready : 1;//6
+    uint16_t probErr : 1;//7
+    uint16_t reserv : 8;//8-15
+};
+#pragma pack (pop)
+
+union statusInpR
+{
+    uint16_t word;
+    statInpRbits b;
 };
 
 enum CONTROL_REG_BITS
 {
-    AUTOCLB_EN = 1,
-    START_CLB = 2
+    DO_HALL_L_ADC_ON,
+    DO_HALL_R_ADC_ON,
+    DO_CURRENT_ADC_ON,
+    DO_T_ADC_ON,
+    DO_HALL_CURRENT_ON,
+    DO_CALIBRATE
 };
 #pragma pack(push, 1)
 struct ctlHRbits
 {
-    uint16_t clbAutoEn : 1;
-    uint16_t startClb : 1;
-    uint16_t HAL_L_CH_ON : 1;
-    uint16_t HAL_R_CH_ON : 1;
-    uint16_t HALL_CURR_CH_ON : 1;
-    uint16_t TEMPERATURE_CH_ON : 1;
-    uint16_t reservCtl : 12;
+    uint16_t hallLadcOn : 1;//0
+    uint16_t hallRadcOn : 1;//1
+    uint16_t hCurradcOn : 1;//2
+    uint16_t tadcOn : 1;//3
+    uint16_t currentOn : 1;//4
+    uint16_t startClb : 1;//5
+    uint16_t reserv : 8;//6-15
 };
 #pragma pack(pop)
 
 union ctlHR
 {
     uint16_t word;
-    ctlHRbits bits;
+    ctlHRbits b;
 };
 
 void modbus_start();
@@ -69,6 +107,9 @@ uint32_t getControlHR();
 void clbTimeWr(uint16_t val);
 uint32_t clbTimeRd();
 void timeRefreshed();
+bool isListen();
+void setStatRgClbBit();
+void clrStatRgClbBit();
 
 
 //void mb_thread_entry(void *arg1, void *arg2, void *arg3);
