@@ -5,7 +5,7 @@
 #include "board_devs.hpp"
 #include "mbs.hpp"
 
-static struct k_mutex adc_rd;
+//static struct k_mutex adc_rd;
 struct k_spinlock AdcSequencer::adc_lock;
 
 
@@ -50,7 +50,6 @@ bool AdcSequencer::isClbDone()
 {
     return isCalibrateDone;
 }
-
 void AdcSequencer::addChan(AbstractADC* chan, unsigned char chNum, uint32_t scale, int32_t sensSh, double sensX)
 {
     if (chNum < ACQ_CHAN_NUM)
@@ -131,7 +130,7 @@ void AdcSequencer::acq()
     int err;
     int count;
     AbstractADC* currChan;
-    static int cnt = 0;
+ //   static int cnt = 0;
     for (int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
     {
         currChan = chanSet[ch];
@@ -354,7 +353,6 @@ int64_t AdcSequencer::getDataT  (int32_t* dataOut, unsigned char startCh, unsign
 // {
 //    return getDataT(dataOut, 0, ACQ_CHAN_NUM - 1); 
 // }
-
 
 
 void AdcSequencer::autoClbEnable()

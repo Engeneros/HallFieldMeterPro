@@ -14,6 +14,8 @@ static const double MAX_REF_V = 600000;//uV
     GPO* getRedLED();
     GPO* getYellowLED();
     GPO* getGreenLED();
+    GPO* getExtYellowLED();
+    GPO* getExtAmbrLED();
 
     class AbstractADC;
     class AdcSequencer;

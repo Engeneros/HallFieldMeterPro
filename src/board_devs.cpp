@@ -5,25 +5,36 @@
 static const struct gpio_dt_spec red_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_red), gpios);
 static const struct gpio_dt_spec yellow_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_blue), gpios);
 static const struct gpio_dt_spec green_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_green), gpios);
+static const struct gpio_dt_spec extyellow_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_yellowext), gpios);
+static const struct gpio_dt_spec extambr_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_ambrext), gpios);
 
 GPO* getRedLED()
 {
-    // Тот самый Meyers Singleton. Создается один раз при первом вызове.
     static GPO led(red_spec); 
     return &led;
 }
 
 GPO* getYellowLED()
 {
-    // Тот самый Meyers Singleton. Создается один раз при первом вызове.
     static GPO led(yellow_spec); 
     return &led;
 }
 
 GPO* getGreenLED()
 {
-    // Тот самый Meyers Singleton. Создается один раз при первом вызове.
     static GPO led(green_spec); 
+    return &led;
+}
+
+GPO* getExtYellowLED()
+{
+    static GPO led(extyellow_spec); 
+    return &led;
+}
+
+GPO* getExtAmbrLED()
+{
+    static GPO led(extambr_spec); 
     return &led;
 }
 
@@ -157,6 +168,8 @@ AbstractADC* getRefMinusMeter()
     return (AbstractADC*) &ad;
 }
 
+
+static const double MGRADUS_VS_MKV = 1000.0/(1106.0 * 3.85);// hm00
 AdcSequencer* getAdcSequencer()
 {
     static bool isCreated = false;
@@ -168,7 +181,7 @@ AdcSequencer* getAdcSequencer()
         adcSqr.addChan( getFieldMeterL(), HALL_SENS_L, 1, 0, 1.0);
         adcSqr.addChan( getFieldMeterR(), HALL_SENS_R, 1, 0, 1.0);
         adcSqr.addChan( getCurrentMeter(), HALL_CURRENT, 1, 0, 5.0);
-        adcSqr.addChan( getTemperatureMeter(), TEMPERATURE, 2, 0, 1.0);
+        adcSqr.addChan( getTemperatureMeter(), TEMPERATURE, 2, 1106000, MGRADUS_VS_MKV);
         adcSqr.addChan(getZeroMeter(),CLB_NULL, 1, 0, 1.0);
         adcSqr.addChan(getRefPlusMeter(), CLB_PLUS, 1, 0, 1.0);
         adcSqr.addChan(getRefMinusMeter(), CLB_MINUS, 1, 0, 1.0);

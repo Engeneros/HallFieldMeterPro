@@ -69,6 +69,7 @@ void adc_thread_entry(void *arg1, void *arg2, void *arg3)
 {
     AdcSequencer* sqr = getAdcSequencer();
     GPO* grn = getGreenLED();
+    GPO* extY = getExtYellowLED();
     sqr->start();
     k_msleep(1200);
 //    adData size is number of ADC chanal + size of time in doubleWords  
@@ -78,6 +79,7 @@ void adc_thread_entry(void *arg1, void *arg2, void *arg3)
     while(1) 
     {
         grn->toggle();
+        extY->toggle();
         sTime.time = sqr->getDataT(adData, HALL_SENS_L, TEMPERATURE);
         sqr->getData(adData, HALL_SENS_L, TEMPERATURE);
         adData[TEMPERATURE + 1] = sTime.dw[1];

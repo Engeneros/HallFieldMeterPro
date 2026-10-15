@@ -7,11 +7,11 @@
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 10;
+static const uint16_t FW_VERSION = 12;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "14.10.26";
-static const char IFC_DATE [] = "11.07.26";
+static const char FW_DATE [] = "15.10.26";
+static const char IFC_DATE [] = "10.11.26";
 static const char LAST_EVENTS [] = "DHCP";
 
 enum CMD_SET
@@ -148,7 +148,7 @@ void Console::getAdcData()
     for (uint8_t ch = HALL_SENS_L; ch < HALL_CURRENT; ++ch )
         printk("UHall[%d]=%fmV\n", ch, static_cast <double>(adDt[ch]) / 1000.0);
     printk("Hall Current=%fmA\n", static_cast <double>(adDt[HALL_CURRENT]) / 1000000.0);
-    printk("UPt1000=%fmV.\n", static_cast <double>(adDt[TEMPERATURE]) / 1000.0);        
+    printk("T Pt1000=%fmC.\n", static_cast <double>(adDt[TEMPERATURE]) / 1000.0);        
 }
 void Console::getVRef()
 {

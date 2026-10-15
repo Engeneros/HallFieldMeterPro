@@ -142,6 +142,16 @@
 			label = "LED BLUE";
 		};
 
+		led_yellowext: led-yellowext{
+			gpios = <&gpiof 13 GPIO_ACTIVE_HIGH>;
+			label = "LED EXTYELLOW";
+		};
+
+		led_ambrext: led-ambrext {
+			gpios = <&gpiof 14 GPIO_ACTIVE_HIGH>;
+			label = "LED EXTAMBR";
+		};
+
         ad_mx_0: ad-mx-0 {
 			gpios = <&gpiof 2 GPIO_ACTIVE_HIGH>;
 			label = "ADC_MUX_A0";

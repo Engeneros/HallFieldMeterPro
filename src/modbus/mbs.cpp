@@ -374,6 +374,7 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
 {
     LOG_INF("Starting Modbus TCP Application...");
     GPO* red = getRedLED();
+    GPO* extAmb = getExtAmbrLED();
 
     // === 1. ОСТАВЛЯЕМ ВАШУ ИНИЦИАЛИЗАЦИЮ MODBUS БЕЗ ИЗМЕНЕНИЙ ===
     struct modbus_iface_param param = {
@@ -399,48 +400,47 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
         return;
     }
 
-    // Регистрируем подписку на событие добавления IP
+    //IP event subscribe registration
     net_mgmt_init_event_callback(&net_cb, net_event_handler, NET_EVENT_IPV4_ADDR_ADD);
     net_mgmt_add_event_callback(&net_cb);
 
-    char ip_str[NET_IPV4_ADDR_LEN] = {0};
-    // Стартуем DHCPv4
     net_dhcpv4_start(iface);
     LOG_INF("DHCPv4 client started, waiting for IP from router...");
     k_sem_take(&ip_obtained_sem, K_FOREVER);
+////////////////////
+    k_msleep(50); 
 
-    // Как только мы проснулись здесь — IP точно получен!
-    // struct in_addr *addr = &iface->config.ip.ipv4->unicast[0].address.in_addr;
-
-    // if (addr->s_addr != 0)
-    // {
-    //     net_addr_ntop(AF_INET, addr, ip_str, sizeof(ip_str));
-    //     LOG_INF("==================================================");
-    //     LOG_INF("=== DHCP SUCCESS! My Assigned IP Address: %s ===", ip_str);
-    //     LOG_INF("==================================================");
-    // }
-
-    LOG_INF("==================================================");
-    LOG_INF("=== DHCP SUCCESS! IP Address assigned by router ===");
-    LOG_INF("==================================================");
-
+    // === БЕЗОПАСНО ПОЛУЧАЕМ IP АДРЕС ЧЕРЕЗ МАССИВ UNICAST ===
+    char ip_str[NET_IPV4_ADDR_LEN] = "0.0.0.0";
     
-//     while (1) {
-//         // Проверяем, назначен ли на интерфейс хоть один валидный IPv4 адрес
-//         struct in_addr *addr = &iface->config.ip.ipv4->unicast[0].address.in_addr;
-        
-//         // Если адрес не нулевой (т.е. роутер его выдал)
-//         if (addr->s_addr != 0) {
-//             net_addr_ntop(AF_INET, addr, ip_str, sizeof(ip_str));
-//             LOG_INF("==================================================");
-//             LOG_INF("=== DHCP SUCCESS! My Assigned IP Address: %s ===", ip_str);
-//             LOG_INF("==================================================");
-//             break; // Адрес получен, выходим из цикла ожидания
-//         }
+    // unicast — это массив. Берем его первый [0] элемент и вытаскиваем адрес
+    //struct in_addr *addr = &iface->config.ip.ipv4->unicast[0].address.in_addr;
+    struct in_addr *addr = &iface->config.ip.ipv4->unicast[0].ipv4.address.in_addr;
+    if (addr->s_addr != 0)
+    {
+        net_addr_ntop(AF_INET, addr, ip_str, sizeof(ip_str));
+    }
 
+    // === ПОЛУЧАЕМ И ВЫВОДИМ MAC АДРЕС ===
+    struct net_linkaddr *mac_addr = net_if_get_link_addr(iface);
 
+    LOG_INF("==================================================");
+    LOG_INF("=== NETWORK CONFIGURATION ACQUIRED SUCCESSFULLY ===");
+    LOG_INF("==================================================");
+    LOG_INF("Board Hostname : hm00.local");
+    LOG_INF("Assigned IP    : %s", ip_str);
+    
+    if (mac_addr && mac_addr->len == 6) {
+        LOG_INF("Board MAC Addr : %02X:%02X:%02X:%02X:%02X:%02X",
+                mac_addr->addr[0], mac_addr->addr[1], mac_addr->addr[2],
+                mac_addr->addr[3], mac_addr->addr[4], mac_addr->addr[5]);
+    } else {
+        LOG_WRN("Board MAC Addr : Failed to read MAC");
+    }
+    LOG_INF("==================================================");
 
-    // === 3. ОТКРЫВАЕМ СЕТЕВОЙ СОКЕТ MODBUS ===
+//////////////////
+     // === 3. ОТКРЫВАЕМ СЕТЕВОЙ СОКЕТ MODBUS ===
     int server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_fd < 0) 
     {
@@ -477,24 +477,6 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
         isLstStart = true;
         LOG_INF("LISTEN == ok");
     }
-    // LOG_INF("====== ENTERING MAIN LOOP: BEFORE ACCEPT ======");
-    // while (1) 
-    // {
-    //     struct sockaddr_in client_addr;
-    //     socklen_t client_addr_len = sizeof(client_addr);
-        
-    //     int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-    //     if (client_fd < 0)
-    //     { 
-    //         k_sleep(K_MSEC(1));
-    //         LOG_INF("------OOPS-- ACCEPT < 0"); 
-    //         continue;
-    //     }
-    //     LOG_INF("QModMaster has connected to socket");     
-    //     /* Сохраняем дескриптор сокета, чтобы коллбек отправки знал, куда слать данные */
-    //     active_client_fd = client_fd;
-    //     while (1) 
-//////
 
     LOG_INF("====== ENTERING MAIN LOOP: BEFORE ACCEPT ======");
     while (1) 
@@ -543,7 +525,8 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
             /* Назначаем Unit ID (индекс 6) и Function Code (индекс 7) */
             adu.unit_id = mrx_buf[6]; 
             adu.fc = mrx_buf[7];
-            red->toggle();           
+            red->toggle();   
+            extAmb->toggle();        
             /* Длина PDU данных — всё, что идет после Function Code */
             adu.length = rc - 8; 
             
@@ -632,7 +615,7 @@ void modbus_start()
     statusInpR ir;
     ir.word = 0x5f;
     input_regs[IR_STATUS] = ir.word;
-    input_regs[IR_BRD_INFO] = 0x0100;///
+    input_regs[IR_BRD_INFO] = 0x0000;///
     input_regs[IR_PROBE_INFO]  = 0x0110;///
     input_regs[IR_FW_VERSION]  = 0x000B;///
     input_regs[IR_IFC_VERSION]  = 0x0000;///

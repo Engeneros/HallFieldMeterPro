@@ -72,9 +72,8 @@ bool ADS1234::ifcInit()
 
 int32_t ADS1234::readRawSpiData()
 {
-    uint8_t rxBuffer[3] = {0}; // Буфер под 3 байта (24 бита) данных АЦП
-    static int cnt = 0;
-    // Настраиваем структуру буфера для Zephyr SPI API
+    uint8_t rxBuffer[3] = {0}; //SPI ADC data buffer 3 Byte = 24 бита
+
     struct spi_buf rxBuf = {
         .buf = rxBuffer,
         .len = sizeof(rxBuffer)

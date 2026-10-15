@@ -24,4 +24,5 @@
 261001 V9 full mb befin
 261002 V9 Holding reg RW
 261012 V10 The time associated with the last ADC sample can be read via Modbus. The time can be synchronized via Modbus. 	
-261014 V11 DHCP and control + status reg operations (calibration)		  
+261014 V11 DHCP and control + status reg operations (calibration)
+261015 V12  Ch3 ADC - Temperature in mC  
