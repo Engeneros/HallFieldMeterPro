@@ -8,11 +8,13 @@ public:
     Console();
     void printMenu();
     void badCmd(); 
-
+    void printVersion();
+    void printQ();
+    void printNews();
     void parser(unsigned int argc, char **argv);
     virtual ~Console(){}
 private:
-    void printVersion();
+    
     void calibrate();
     void printClbData();
     void enAutoClb();
@@ -22,7 +24,7 @@ private:
     void getAdcData();
     void setVRef(unsigned int argc, char **argv);
     void getVRef();
-    void printNews();
+    
 
 
     AdcSequencer* adcSys;

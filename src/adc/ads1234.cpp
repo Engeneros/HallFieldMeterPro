@@ -2,6 +2,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/kernel.h>
+#include "board_devs.hpp"
+#include "gpo.hpp"
 
 
 bool ADS1234::ifcInit()
@@ -15,7 +17,9 @@ bool ADS1234::ifcInit()
     gpio_pin_configure_dt(&ctrl->clbMx0, GPIO_OUTPUT_ACTIVE);
     gpio_pin_configure_dt(&ctrl->clbMx1, GPIO_OUTPUT_ACTIVE);
     gpio_pin_configure_dt(&ctrl->clbMxEn, GPIO_OUTPUT_ACTIVE);
+    k_msleep(1);
     gpio_pin_set_dt(&ctrl->adReset,  0); 
+    k_msleep(1);
     // 2. Проверяем, готов ли порт B к работе
     // if (!device_is_ready(drdy_spec.port)) {
     //     printk("Error: GPIO port B is not ready!\n");
@@ -34,6 +38,11 @@ bool ADS1234::ifcInit()
 
     // Включаем аппаратное EXTI прерывание по ОТРИЦАТЕЛЬНОМУ фронту (спад в LOW)
     gpio_pin_set_dt(&ctrl->adReset,  1); 
+    k_msleep(1);
+    gpio_pin_set_dt(&ctrl->adReset,  0); 
+    k_msleep(1);
+    gpio_pin_set_dt(&ctrl->adReset,  1); 
+    k_msleep(1);
 //    printk("ADS1234 Reset = 1\n");
 //    gpio_pin_interrupt_configure_dt(&ctrl->adDtRdy, GPIO_INT_EDGE_TO_ACTIVE);
 //    printk("EXTI DataReady interrupt work\n");
@@ -91,6 +100,8 @@ int32_t ADS1234::readRawSpiData()
 
     // Физическое вычитывание 3 байт по шине SPI
     // Zephyr автоматически прижмет пин CS, выдаст 24 тактовых импульса и отпустит CS
+    GPO* drD = getDRDoubler();
+    drD->setOn();
     int err = spi_read_dt(&ctrl->adSPI, &rxBufSet);
     if (err < 0) {
         printk("SPI read error: %d\n", err);
@@ -104,6 +115,7 @@ int32_t ADS1234::readRawSpiData()
      }
     rawValue |= rxBuffer[2];
     rawValue |= ((rawValue & 0x00800000) == 0)? 0 :  0xFF000000; 
+    drD->setOff();
     return rawValue ;//+ (++cnt << 16) ;
 }
 
@@ -136,12 +148,15 @@ ADS1234::ADS1234(const struct ControlPins* pinsCtl,
 
 void ADS1234::start()
 {
+//    gpio_pin_set_dt(&ctrl->adReset,  1); 
+//    k_msleep(1);
      gpio_port_set_masked_raw(ctrl->adMx0.port, portMask, chanCfg); 
 }
 
 void ADS1234::stop()
 {
-
+//    gpio_pin_set_dt(&ctrl->adReset,  0); 
+//    k_msleep(1);
 }
 
 

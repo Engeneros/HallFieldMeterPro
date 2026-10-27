@@ -118,6 +118,11 @@
 	status = "okay";
 };
 
+&gpiod {
+	status = "okay";
+};
+
+
 
 / {
 	 //Имя контейнера делаем тоже понятным и без префикса "my"
@@ -195,6 +200,10 @@
         ad_rst_n: ad-rst-n {
 			gpios = <&gpiof 10 GPIO_ACTIVE_HIGH>;
 			label = "ADC_NEG_RESET";
+		};
+	dr_dbl: dr-dbl {
+			gpios = <&gpiod 9 GPIO_ACTIVE_HIGH>;
+			label = "DR_DBL";
 		};
 
 	};

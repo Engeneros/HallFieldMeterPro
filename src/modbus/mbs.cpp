@@ -427,7 +427,7 @@ void mb_thread_entry(void *arg1, void *arg2, void *arg3)
     LOG_INF("==================================================");
     LOG_INF("=== NETWORK CONFIGURATION ACQUIRED SUCCESSFULLY ===");
     LOG_INF("==================================================");
-    LOG_INF("Board Hostname : hm00.local");
+    LOG_INF("Board Hostname : hm01.local");
     LOG_INF("Assigned IP    : %s", ip_str);
     
     if (mac_addr && mac_addr->len == 6) {
@@ -615,9 +615,9 @@ void modbus_start()
     statusInpR ir;
     ir.word = 0x5f;
     input_regs[IR_STATUS] = ir.word;
-    input_regs[IR_BRD_INFO] = 0x0000;///
+    input_regs[IR_BRD_INFO] = 0x0001;///
     input_regs[IR_PROBE_INFO]  = 0x0110;///
-    input_regs[IR_FW_VERSION]  = 0x000B;///
+    input_regs[IR_FW_VERSION]  = 0x000C;///
     input_regs[IR_IFC_VERSION]  = 0x0000;///
     holding_regs[HR_CONTROL] = 0x1F;
     

@@ -33,6 +33,7 @@ public:
 // the calibration adjustments for the channel must be multiplied.   
     void addChan(AbstractADC* chan, unsigned char chNum, uint32_t scale, int32_t sensSh, double sensX);
     void start();
+    void getQ(int32_t* dataOut);
     void getAllData(int32_t* dataOut);
     void getData(int32_t* dataOut, unsigned char startCh, unsigned char endCh);
     //int64_t getAllDataT(int32_t* dataOut);
@@ -71,8 +72,8 @@ private:
    static void drdyGpioCallbackThunk(const struct device *port, struct gpio_callback *cb, uint32_t pins);
    static void threadEntryThunk(void *p1, void *p2, void *p3);
    static const unsigned int  DEFAULT_AUTO_CLB_T = 20;
-   static const unsigned int TRASH_SAMPLE_NUM = 4;
-   static const unsigned int SAMPLES_PER_ACQ = 8;
+   static const unsigned int TRASH_SAMPLE_NUM = 40;
+   static const unsigned int SAMPLES_PER_ACQ = 16;
 
     int acqCycCnt;
     bool clbRequest {false};

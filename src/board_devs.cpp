@@ -7,7 +7,14 @@ static const struct gpio_dt_spec yellow_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led
 static const struct gpio_dt_spec green_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_green), gpios);
 static const struct gpio_dt_spec extyellow_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_yellowext), gpios);
 static const struct gpio_dt_spec extambr_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(led_ambrext), gpios);
+static const struct gpio_dt_spec dr_dbl_spec = GPIO_DT_SPEC_GET(DT_NODELABEL(dr_dbl), gpios);
 
+
+GPO* getDRDoubler()
+{
+    static GPO led(dr_dbl_spec); 
+    return &led;
+}
 GPO* getRedLED()
 {
     static GPO led(red_spec); 
@@ -212,6 +219,6 @@ AbstractMem* getBrdEEprom()
 #include "uni_time.hpp"
 UniTime* getBrdTime()
 {
-    static UniTime bTm = UniTime(0xEFDCBA9876540000);
+    static UniTime bTm = UniTime(0x0);
     return &bTm;
 }

@@ -85,7 +85,7 @@ void adc_thread_entry(void *arg1, void *arg2, void *arg3)
         adData[TEMPERATURE + 1] = sTime.dw[1];
         adData[TEMPERATURE + 2] = sTime.dw[0];
         refresh_input_regs(adData, HALL_SENS_L,  TEMPERATURE + TIME_SIZE);
-        k_msleep(600);
+        k_msleep(6000);
     }
 
 }
@@ -114,8 +114,13 @@ int main(void)
 
     if (adc_tid)
         printk("adc thread created.\n");
-    printk("--26A14-0  System started. type '_ <your_string>'in terminal.\n");
+
+    printk("--26A19-x2x  System started. type '_ <your_string>'in terminal.\n");
     k_msleep(100);
+    Console* cnsl = getConsole();
+    cnsl->printVersion();
+    cnsl->printNews();
+    cnsl->printMenu();
     AdcSequencer* adSqr = getAdcSequencer();
     while(true)
     {           

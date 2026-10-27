@@ -131,7 +131,7 @@ void AdcSequencer::acq()
     int count;
     AbstractADC* currChan;
  //   static int cnt = 0;
-    for (int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
+    for (int ch = HALL_SENS_L;  ch <  ACQ_CHAN_NUM; ++ch)
     {
         currChan = chanSet[ch];
         if (currChan != nullptr)
@@ -164,6 +164,7 @@ void AdcSequencer::acq()
                 k_sem_reset(&drdySem);    
                 gpio_add_callback(adDataRdy->port, &drdyCbData);
             }
+            currChan->stop();
             cnvNum[ch] = count;
             cnvSumm[ch] = summ;
             
@@ -230,6 +231,7 @@ void AdcSequencer::clbProc()
                 k_sem_reset(&drdySem);    
                 gpio_add_callback(adDataRdy->port, &drdyCbData);
             }
+            currChan->stop();
             if(count > 0)
             {
                 acqData[ch - CLB_NULL] = summ/count;
@@ -239,13 +241,14 @@ void AdcSequencer::clbProc()
                 printk("OOPS!!: no valid samples, ch %d\n", ch); 
         }
     }
+    double tempDeltaQ = (vReference * 2.0 )/ static_cast<double>(acqData[CLB_PLUS - CLB_NULL] - acqData[CLB_MINUS - CLB_NULL]);
     for (int ch = HALL_SENS_L; ch < CLB_NULL; ++ch)
     {
         shift_inQ[ch] = acqData[0]/chScaleFactor[ch];//
         //vReference = 500000uV - voltage from mux calibration chanel
-        uVperQuant[ch] =  vReference * 2.0 * static_cast<double>(chScaleFactor[ch])/ static_cast<double>(acqData[CLB_PLUS - CLB_NULL] - acqData[CLB_MINUS - CLB_NULL]);
+        uVperQuant[ch] =  tempDeltaQ * static_cast<double>(chScaleFactor[ch]);
     }
-    printk(" zero shift is %d\n", acqData[0]);
+    printk(" zero shift is %d==%d\n", acqData[0], (acqData[CLB_PLUS - CLB_NULL] + acqData[CLB_MINUS - CLB_NULL])/2);
     printk("%d quants per 1V\n", acqData[CLB_PLUS - CLB_NULL] - acqData[CLB_MINUS - CLB_NULL]);
     setStatRgClbBit();
     isCalibrateDone = true;
@@ -254,8 +257,29 @@ void AdcSequencer::clbProc()
 void AdcSequencer::threadLoop()
 {
     static const unsigned int SAMPLES_PER_CYCLE = (TRASH_SAMPLE_NUM + SAMPLES_PER_ACQ)*CLB_NULL;
+
+ //   acq();
+ //   sampleTime = tm->getTime();
+    k_msleep(200);
     clbRequest = false;
     clbProc();
+    k_msleep(5); 
+    clbRequest = false;
+    clbProc();
+    k_msleep(5); 
+    clbRequest = false;
+    clbProc();
+    k_msleep(5);
+    clbRequest = false;
+    clbProc();
+    k_msleep(5); 
+    clbRequest = false;
+    clbProc();
+    k_msleep(5); 
+    clbRequest = false;
+    clbProc();
+    k_msleep(5);
+    clbRequest = false;
     while (true)
     {          
         for (acqCycCnt = (autoClbTsec * 100)/SAMPLES_PER_CYCLE; acqCycCnt > 0; --acqCycCnt) 
@@ -275,7 +299,33 @@ void AdcSequencer::threadLoop()
     }
  }
 
-void AdcSequencer::getData  (int32_t* dataOut, unsigned char startCh, unsigned char endCh)
+void  AdcSequencer::getQ(int32_t* dataOut)
+{
+    k_spinlock_key_t key;
+    int summ, nums;
+    double tmSumm, tmN;
+    for (int ch = 0; ch < ACQ_CHAN_NUM; ++ch)
+    {
+        if(cnvNum[ch] > 0)
+        {
+            key = k_spin_lock(&adc_lock);
+            summ = cnvSumm[ch];
+            nums = cnvNum[ch];
+            k_spin_unlock(&adc_lock, key);
+            tmSumm = static_cast<double>(summ);
+            tmN = static_cast<double>(nums);
+//            tmSumm *= uVperQuant[ch];//*(static_cast<double>(cnvSumm[ch])/static_cast<double>(cnvNum[ch]));
+            tmSumm /= tmN;
+            // tmSumm -= static_cast<double>(sensorShift[ch]);
+            // tmSumm *= sensorScale[ch];
+            dataOut[ch] = static_cast<int32_t>(tmSumm);
+        }
+        else
+            dataOut[ch] = 12345678;
+    }
+}
+
+ void AdcSequencer::getData  (int32_t* dataOut, unsigned char startCh, unsigned char endCh)
 {
     k_spinlock_key_t key;
     int summ, nums;

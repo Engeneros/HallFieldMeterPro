@@ -7,12 +7,12 @@
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 12;
+static const uint16_t FW_VERSION = 132;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "15.10.26";
-static const char IFC_DATE [] = "10.11.26";
-static const char LAST_EVENTS [] = "DHCP";
+static const char FW_DATE [] = "19.10.26";
+static const char IFC_DATE [] = "19.11.26";
+static const char LAST_EVENTS [] = "Shift";
 
 enum CMD_SET
 {
@@ -20,6 +20,7 @@ enum CMD_SET
     CMD_GET_NEWS,
     CMD_CALIBRATION,
     CMD_CLB_DATA,
+    CMD_GET_QUANTS,
     CMD_DISABLE_AUTO,
     CMD_ENABLE_AUTO,
     CMD_SET_AUTO_PERIOD,
@@ -36,6 +37,7 @@ static const char* const CONSOLE_CMD[] = {
     "news",
     "clb",
     "clbData",
+    "qu",
     "disA",
     "enA",
     "tA=",
@@ -53,6 +55,7 @@ void Console::printMenu()
     printk("news - obtain information about the latest changes\n");
     printk("clb - calibrate\n");
     printk("clbData - show calibrate data \n");
+    printk("qu - show ADC channnel quants  \n");
     printk("disA - disable autocalibrate \n");
     printk("enAa - enable autocalibtate \n");
     printk("tA=<SPACE><time in seconds> - set autocalibrate period \n");
@@ -101,6 +104,16 @@ void Console::printClbData()
         printk("uVpQ[%d]=%f \n", ch, uVpq[ch] );
 }
 
+void Console::printQ()
+{
+    int32_t adDt[ACQ_CHAN_NUM];
+    adcSys->getQ(adDt);
+    for(uint8_t ch = 0; ch < ACQ_CHAN_NUM; ++ch)
+        printk("Q[%d]=%dq \n", ch, adDt[ch]);
+    printk("Delta+_=%dq \n", (adDt[CLB_PLUS] + adDt[CLB_MINUS])/2);    
+
+}
+
 void Console::disAutoClb()
 {
     ctlHR temp;
@@ -138,7 +151,7 @@ void Console::setAutoClbTime(unsigned int argc, char **argv)
 
 void Console::getAutoClbTime()
 {
-    printk("autocalibrate period is %d cec", adcSys->autoClbGetT());
+    printk("autocalibrate period is %d sec", adcSys->autoClbGetT());
 }
 
 void Console::getAdcData()
@@ -196,6 +209,8 @@ void Console::parser(unsigned int argc, char **argv)
             break;
         case CMD_CLB_DATA : printClbData();
             break;
+        case CMD_GET_QUANTS : printQ();
+            break;    
         case CMD_DISABLE_AUTO : disAutoClb();
             break;
         case CMD_ENABLE_AUTO :  enAutoClb();
