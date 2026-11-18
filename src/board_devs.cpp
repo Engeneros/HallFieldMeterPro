@@ -185,8 +185,8 @@ AdcSequencer* getAdcSequencer()
     {
         isCreated = true;
         printk("--------Sequencer Created----------\n");      
-        adcSqr.addChan( getFieldMeterL(), HALL_SENS_L, 1, 0, 1.0);
-        adcSqr.addChan( getFieldMeterR(), HALL_SENS_R, 1, 0, 1.0);
+        adcSqr.addChan( getFieldMeterL(), HALL_SENS_L, 1, -192, 1.0);//Prob5#9
+        adcSqr.addChan( getFieldMeterR(), HALL_SENS_R, 1, 10, 1.0);//////Prob5#10
         adcSqr.addChan( getCurrentMeter(), HALL_CURRENT, 1, 0, 5.0);
         adcSqr.addChan( getTemperatureMeter(), TEMPERATURE, 2, 1106000, MGRADUS_VS_MKV);
         adcSqr.addChan(getZeroMeter(),CLB_NULL, 1, 0, 1.0);

@@ -34,6 +34,7 @@ public:
     void addChan(AbstractADC* chan, unsigned char chNum, uint32_t scale, int32_t sensSh, double sensX);
     void start();
     void getQ(int32_t* dataOut);
+    void getUVData(int32_t* dataOut);
     void getAllData(int32_t* dataOut);
     void getData(int32_t* dataOut, unsigned char startCh, unsigned char endCh);
     //int64_t getAllDataT(int32_t* dataOut);
@@ -51,7 +52,8 @@ public:
 private:
    void threadLoop();
    void acq();
-   void clbProc();    
+   void clbProc();  
+   void uV2mGs(int32_t *adData);  
    UniTime* tm;
    const struct gpio_dt_spec* adDataRdy;
    AbstractADC* chanSet[ACQ_CHAN_NUM];

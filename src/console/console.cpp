@@ -7,12 +7,12 @@
 //#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const uint16_t HW_VERSION = 0;
-static const uint16_t FW_VERSION = 132;
+static const uint16_t FW_VERSION = 15;
 static const uint16_t IFC_VERSION = 0;
 static const char HW_DATE [] = "02.26";
-static const char FW_DATE [] = "19.10.26";
-static const char IFC_DATE [] = "19.11.26";
-static const char LAST_EVENTS [] = "Shift";
+static const char FW_DATE [] = "17.11.26";
+static const char IFC_DATE [] = "02.10.26";
+static const char LAST_EVENTS [] = "ADC in mGs";
 
 enum CMD_SET
 {
@@ -26,6 +26,8 @@ enum CMD_SET
     CMD_SET_AUTO_PERIOD,
     CMD_GET_AUTOPERIOD,
     CMD_ADC_DATA,
+    CMD_ADC_DATA_S,
+    CMD_ADC_DATA_MV,
     CMD_V_REF_SET,
     CMD_V_REF_GET,
     CMD_BAD_CMD,
@@ -43,6 +45,8 @@ static const char* const CONSOLE_CMD[] = {
     "tA=",
     "tA",
     "ADC",
+    "SAD",
+    "mV",
     "vRef=",
     "vRef",
     "bad command"
@@ -61,6 +65,8 @@ void Console::printMenu()
     printk("tA=<SPACE><time in seconds> - set autocalibrate period \n");
     printk("tA - show autocalibrate period \n"); 
     printk("ADC - show ADCs chanhels data\n");
+    printk("SAD - show ADCs chanhels data with semicolon separator\n");
+    printk("mV - show Hall sens in mV\n");
     printk("vRef= <SPACE><ref voltage in uVolt> - set reference voltage\n");
     printk("vRef - get reference voltage\n");
     printk("-------------------------- \n"); 
@@ -111,8 +117,9 @@ void Console::printQ()
     for(uint8_t ch = 0; ch < ACQ_CHAN_NUM; ++ch)
         printk("Q[%d]=%dq \n", ch, adDt[ch]);
     printk("Delta+_=%dq \n", (adDt[CLB_PLUS] + adDt[CLB_MINUS])/2);    
-
 }
+
+
 
 void Console::disAutoClb()
 {
@@ -154,15 +161,47 @@ void Console::getAutoClbTime()
     printk("autocalibrate period is %d sec", adcSys->autoClbGetT());
 }
 
-void Console::getAdcData()
+void Console::get_mVAdcData()
 {
     int32_t adDt[TEMPERATURE + 1];
-    adcSys->getData(adDt, HALL_SENS_L, TEMPERATURE);
+    adcSys->getUVData(adDt);
     for (uint8_t ch = HALL_SENS_L; ch < HALL_CURRENT; ++ch )
         printk("UHall[%d]=%fmV\n", ch, static_cast <double>(adDt[ch]) / 1000.0);
     printk("Hall Current=%fmA\n", static_cast <double>(adDt[HALL_CURRENT]) / 1000000.0);
     printk("T Pt1000=%fmC.\n", static_cast <double>(adDt[TEMPERATURE]) / 1000.0);        
 }
+
+// void Console::getSAdcData()
+// {
+//     int32_t adDt[TEMPERATURE + 1];
+//     adcSys->getData(adDt, HALL_SENS_L, TEMPERATURE);
+//     for (uint8_t ch = HALL_SENS_L; ch < HALL_CURRENT; ++ch )
+//         printk("%f;", static_cast <double>(adDt[ch]) / 1000.0);
+//     printk("%f;", static_cast <double>(adDt[HALL_CURRENT]) / 1000000.0);
+//     printk("%f\n", static_cast <double>(adDt[TEMPERATURE]) / 1000.0);        
+// }
+
+void Console::getAdcData()
+{
+    int32_t adDt[TEMPERATURE + 1];
+    adcSys->getData(adDt, HALL_SENS_L, TEMPERATURE);
+    for (uint8_t ch = HALL_SENS_L; ch < HALL_CURRENT; ++ch )
+        printk("UHall[%d]=%fGs\n", ch, static_cast <double>(adDt[ch])/1000.0);
+    printk("Hall Current=%fmA\n", static_cast <double>(adDt[HALL_CURRENT]) / 1000000.0);
+    printk("T Pt1000=%fmC.\n", static_cast <double>(adDt[TEMPERATURE]) / 1000.0);        
+}
+
+void Console::getSAdcData()
+{
+    int32_t adDt[TEMPERATURE + 1];
+    adcSys->getData(adDt, HALL_SENS_L, TEMPERATURE);
+    for (uint8_t ch = HALL_SENS_L; ch < HALL_CURRENT; ++ch )
+        printk("%f;", static_cast <double>(adDt[ch])/1000.0 );
+    printk("%f;", static_cast <double>(adDt[HALL_CURRENT]) / 1000000.0);
+    printk("%f\n", static_cast <double>(adDt[TEMPERATURE]) / 1000.0);        
+}
+
+
 void Console::getVRef()
 {
     printk("V reference is %f\n", adcSys->getVRef());
@@ -222,7 +261,11 @@ void Console::parser(unsigned int argc, char **argv)
         case CMD_BAD_CMD : badCmd();        
             break;
         case CMD_ADC_DATA : getAdcData();
-            break;  
+            break;
+        case CMD_ADC_DATA_S : getSAdcData();
+             break; 
+        case CMD_ADC_DATA_MV : get_mVAdcData();
+             break;
         case CMD_V_REF_SET : setVRef(argc, argv);
             break;
         case CMD_V_REF_GET : getVRef();

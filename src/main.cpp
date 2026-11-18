@@ -96,11 +96,6 @@ int main(void)
     //We’ll quickly copy the holding registers here
     ctlHR  regHCtl;
     uint16_t  autoClbT;
-
-    modbus_start();
-    while(isListen() == false)
-        k_msleep(20);
-
     GPO* yellow = getYellowLED();
     k_msleep(100);
     k_tid_t adc_tid = k_thread_create(&adc_thread_data,
@@ -115,17 +110,27 @@ int main(void)
     if (adc_tid)
         printk("adc thread created.\n");
 
-    printk("--26A19-x2x  System started. type '_ <your_string>'in terminal.\n");
+    printk("--1ABA-V14 ADC work wo MB  System started. type '_ <your_string>'in terminal.\n");
+    printk("System started. type '_ <your_string>'in terminal.\n");
+    printk("Type '_ <your_string>'in terminal.\n");
     k_msleep(100);
     Console* cnsl = getConsole();
     cnsl->printVersion();
     cnsl->printNews();
     cnsl->printMenu();
+
+    modbus_start();
+    while(isListen() == false)
+        k_msleep(20);
+
     AdcSequencer* adSqr = getAdcSequencer();
     while(true)
     {           
-        yellow->toggle();
-        k_msleep(500);
+        yellow->setOn();
+        k_msleep(100);
+        yellow->setOff();
+        k_msleep(400);
+        
         // autoClbT =  clbTimeRd(); //==uncomment for autoclb
         // adSqr->autoClbSetT(autoClbT);
         regHCtl.word = getControlHR();

@@ -25,4 +25,5 @@
 261002 V9 Holding reg RW
 261012 V10 The time associated with the last ADC sample can be read via Modbus. The time can be synchronized via Modbus. 	
 261014 V11 DHCP and control + status reg operations (calibration)
-261015 V12  Ch3 ADC - Temperature in mC  
+261015 V12  Ch3 ADC - Temperature in mC 
+261117 V15 Ch0 & Ch1 ADC in mGs; Console out in mV & Gs. hardCore calibration for probe5 (He244#9 &He244#10)

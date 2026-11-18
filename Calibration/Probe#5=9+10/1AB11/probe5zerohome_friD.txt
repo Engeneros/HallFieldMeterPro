@@ -1,0 +1,74 @@
+13425216 quants per 1V
+uart:~$ _ ADC
+UHall[0]=284.360000mV
+UHall[1]=283.263000mV
+Hall Current=2.103297mA
+T Pt1000=27.080000mC.
+uart:~$ _ ADC
+UHall[0]=0.005000mV
+UHall[1]=0.004000mV
+Hall Current=2.103354mA
+T Pt1000=27.568000mC.
+uart:~$ _ ADC
+UHall[0]=0.003000mV
+UHall[1]=0.000000mV
+Hall Current=0.000001mA
+T Pt1000=27.380000mC.
+uart:~$ _ ADC
+UHall[0]=0.001000mV
+UHall[1]=0.001000mV
+Hall Current=0.000002mA
+T Pt1000=27.269000mC.
+uart:~$ _ ADC
+UHall[0]=0.000000mV
+UHall[1]=0.000000mV
+Hall Current=0.000002mA
+T Pt1000=27.269000mC.
+uart:~$ _ ADC
+UHall[0]=0.000000mV
+UHall[1]=0.000000mV
+Hall Current=-0.000001mA
+T Pt1000=27.163000mC.
+ zero shift is -2398==-2527
+13425124 quants per 1V
+calibration: zero shift is -2424==-2534
+13425136 quants per 1V
+calibration:u zero shift is -2395==-2515
+13425135 quants per 1V
+uart:~$ _ ADC
+UHall[0]=-0.182000mV
+UHall[1]=0.003000mV
+Hall Current=2.099978mA
+T Pt1000=25.146000mC.
+uart:~$ _ ADC
+UHall[0]=-0.184000mV
+UHall[1]=0.007000mV
+Hall Current=2.100163mA
+T Pt1000=25.225000mC.
+uart:~$ _ ADC
+UHall[0]=-0.195000mV
+UHall[1]=-0.002000mV
+Hall Current=2.100346mA
+T Pt1000=25.437000mC.
+uart:~$ _ ADC
+UHall[0]=-0.194000mV
+UHall[1]=-0.002000mV
+Hall Current=2.100217mA
+T Pt1000=25.423000mC.
+uart:~$ _ ADC
+uart:~$ "m+©*с±mБ]=-0.194000mV
+UHall[1]=0.000000mV
+Hall Current=2.100288mA
+T Pt1000=25.401000mC.
+uart:~$ Ј+©
+я
+UHall[0]=-0.196000mV
+UHall[1]=-0.003000mV
+Hall Current=2.100264mA
+T Pt1000=25.405000mC.
+uart:~$ _ ADC
+UHall[0]=-0.196000mV
+UHall[1]=-0.002000mV
+Hall Current=2.100264mA
+T Pt1000=25.405000mC.
+uart:~$

@@ -133,6 +133,7 @@ void AdcSequencer::acq()
  //   static int cnt = 0;
     for (int ch = HALL_SENS_L;  ch <  ACQ_CHAN_NUM; ++ch)
     {
+ //       int ch = HALL_SENS_R;
         currChan = chanSet[ch];
         if (currChan != nullptr)
         {
@@ -158,7 +159,7 @@ void AdcSequencer::acq()
                 gpio_remove_callback(adDataRdy->port, &drdyCbData);
                 if (err == 0)
                 {              // DRDY! SPI read
-                    summ += currChan->getQuants();// - shift_inQ[ch];
+                    summ += currChan->getQuants() - shift_inQ[ch];
                     ++count;
                 }                
                 k_sem_reset(&drdySem);    
@@ -324,8 +325,72 @@ void  AdcSequencer::getQ(int32_t* dataOut)
             dataOut[ch] = 12345678;
     }
 }
+void  AdcSequencer::uV2mGs(int32_t *adData)
+{
+    static const double POS_18000MG = 18012480;
+    static const double UV_POS_18000L = 365168.557;        
+    static const double UV_POS_2_MGSL = 49.17106; //mGs vs uV
+    static const double UV_POS_18000R = 368827.1737;        
+    static const double UV_POS_2_MGSR = 48.68507; //mGs vs uV
 
- void AdcSequencer::getData  (int32_t* dataOut, unsigned char startCh, unsigned char endCh)
+    static const double NEG_18000MG = -18013320;
+    static const double UV_NEG_18000L = -365187.4303;       
+    static const double UV_NEG_2_MGSL = 49.16752;//mGs vs uV
+    static const double UV_NEG_18000R = -368926.9877;        
+    static const double UV_NEG_2_MGSR = 48.67458;//mGs vs uV
+
+    double iCorr = 2100000.0/(static_cast<double>(adData[HALL_CURRENT])); 
+    double uVLnorm = iCorr * static_cast<double>(adData[HALL_SENS_L]);
+    double uVRnorm = iCorr * static_cast<double>(adData[HALL_SENS_R]); 
+    double mGsL, mGsR;
+
+    // 
+    if (adData[HALL_SENS_L] > 0)
+        mGsL = (uVLnorm - UV_POS_18000L)*UV_POS_2_MGSL + POS_18000MG;
+     else
+        mGsL = (uVLnorm - UV_NEG_18000L)*UV_NEG_2_MGSL + NEG_18000MG;
+    if (adData[HALL_SENS_R] > 0)  
+        mGsR = (uVRnorm - UV_POS_18000R)*UV_POS_2_MGSR + POS_18000MG;
+    else
+        mGsR = (uVRnorm - UV_NEG_18000R)*UV_NEG_2_MGSR + NEG_18000MG;
+
+    adData[HALL_SENS_L] = static_cast<int32_t>(mGsL);
+    adData[HALL_SENS_R] = static_cast<int32_t>(mGsR);
+}
+
+void AdcSequencer::getUVData(int32_t* dataOut)
+{
+
+    k_spinlock_key_t key;
+    int summ, nums;
+    double tmSumm, tmN;
+ //   double tempVal; 
+ //   double tempCnt;
+    for (int ch = HALL_SENS_L; ch <= TEMPERATURE; ++ch)
+        if(cnvNum[ch] > 0)
+        {
+            key = k_spin_lock(&adc_lock);
+            summ = cnvSumm[ch];
+            nums = cnvNum[ch];
+            k_spin_unlock(&adc_lock, key);
+            tmSumm = static_cast<double>(summ);
+            tmN = static_cast<double>(nums);
+
+            tmSumm *= uVperQuant[ch];//*(static_cast<double>(cnvSumm[ch])/static_cast<double>(cnvNum[ch]));
+            tmSumm /= tmN;
+            tmSumm -= static_cast<double>(sensorShift[ch]);
+            tmSumm *= sensorScale[ch];
+            dataOut[ch] = static_cast<int32_t>(tmSumm);
+//            summ = static_cast<int32_t>(tmSumm);
+ //           key = k_spin_lock(&adc_lock);
+ //           acqData[ch] = summ;
+ //           k_spin_unlock(&adc_lock, key);
+        }
+
+}
+
+
+void AdcSequencer::getData  (int32_t* dataOut, unsigned char startCh, unsigned char endCh)
 {
     k_spinlock_key_t key;
     int summ, nums;
@@ -353,8 +418,11 @@ void  AdcSequencer::getQ(int32_t* dataOut)
  //           acqData[ch] = summ;
  //           k_spin_unlock(&adc_lock, key);
         }
-//        dataOut[ch] = acqData[ch];
     }
+    if (  ((startCh <= HALL_SENS_L) && (endCh >= TEMPERATURE)) &&  (dataOut[HALL_CURRENT] != 0) )
+        uV2mGs(dataOut);
+//        dataOut[ch] = acqData[ch];
+}
 
 /////////       
 
@@ -381,7 +449,7 @@ void  AdcSequencer::getQ(int32_t* dataOut)
     //     }
     //     dataOut[ch] = acqData[ch];
     // }
-}
+//
 
 void AdcSequencer::getAllData  (int32_t* dataOut) 
 {
